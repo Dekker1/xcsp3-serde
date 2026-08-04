@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/Dekker1/xcsp3-serde/compare/v0.1.5...v0.2.0) - 2026-08-04
+
+### Added
+
+- [**breaking**] support the XCSP3 competition constraint subset
+- add unroll helper methods to create a instantiated list of constraints
+- add ability to (de)serialize group and block elements
+
 ## [0.1.5] - 2025-11-06
 
 ### Changed
