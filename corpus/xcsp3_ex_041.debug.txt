@@ -85,7 +85,9 @@ Instance {
                         },
                     ],
                     start: "a",
-                    finish: "e",
+                    finish: [
+                        "e",
+                    ],
                 },
             ),
         ),

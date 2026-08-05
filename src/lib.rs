@@ -619,6 +619,14 @@ fn from_string<'de, D: Deserializer<'de>, I: From<String>>(deserializer: D) -> R
 	Ok(s.trim().to_owned().into())
 }
 
+/// Deserialize a whitespace separated list of strings
+fn from_string_vec<'de, D: Deserializer<'de>, I: From<String>>(
+	deserializer: D,
+) -> Result<Vec<I>, D::Error> {
+	let s: Cow<'_, str> = Deserialize::deserialize(deserializer)?;
+	Ok(s.split_whitespace().map(|s| s.to_owned().into()).collect())
+}
+
 /// Parser combinator that parses an integer from a string
 fn idx_int(input: &str) -> IResult<&str, usize> {
 	let (input, i): (_, usize) = map_res(recognize(digit1), str::parse).parse(input)?;
@@ -1624,5 +1632,32 @@ mod tests {
 		};
 		assert_eq!(c.list.start_index, 1);
 		assert_eq!(c.inverse_list.start_index, 2);
+	}
+
+	/// The `<final>` element of a `regular` constraint may name more than one
+	/// accepting state.
+	#[test]
+	fn regular_multiple_final_states() {
+		let xml = r#"<instance format="XCSP3" type="CSP">
+			<variables><array id="y" size="[3]">0 1</array></variables>
+			<constraints>
+				<regular>
+					<list>y[]</list>
+					<transitions>(a,0,b)(b,1,c)(b,0,d)</transitions>
+					<start>a</start>
+					<final>c d</final>
+				</regular>
+			</constraints>
+		</instance>"#;
+		let inst: Instance = quick_xml::de::from_str(xml).unwrap();
+		let [MetaConstraint::Constraint(Constraint::Regular(c))] = inst.constraints.as_slice()
+		else {
+			panic!(
+				"expected a single regular constraint, found {:?}",
+				inst.constraints
+			)
+		};
+		assert_eq!(c.start, "a");
+		assert_eq!(c.finish, vec!["c".to_owned(), "d".to_owned()]);
 	}
 }

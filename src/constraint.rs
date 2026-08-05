@@ -27,8 +27,8 @@ use crate::{
 		identifier, int, range, sequence, tuple, whitespace_seperated, BoolExp, Exp, ExpList,
 		IntExp,
 	},
-	from_string, serialize_list, Instantiation, IntVal, IntoVar, MetaInfo, Placeholder, SimpleRef,
-	VarRef,
+	from_string, from_string_vec, serialize_list, Instantiation, IntVal, IntoVar, MetaInfo,
+	Placeholder, SimpleRef, VarRef,
 };
 
 macro_rules! constraints_enum {
@@ -893,7 +893,8 @@ pub struct Precedence<Identifier = String, Var = VarRef<Identifier>> {
 
 /// Constraint that enforces that the values of the expressions in
 /// [`Self::list`] follow a valid sequence of [`Self::transitions`], starting
-/// from tje [`Self::start`] state and ending at the [`Self::finish`] state.
+/// from the [`Self::start`] state and ending in one of the [`Self::finish`]
+/// states.
 #[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
 #[serde(bound(
 	deserialize = "Identifier: From<String>, Var: IntoVar",
@@ -918,13 +919,16 @@ pub struct Regular<Identifier = String, Var = VarRef<Identifier>> {
 	/// Starting state
 	#[serde(deserialize_with = "from_string", serialize_with = "as_str")]
 	pub start: Identifier,
-	/// Final state
+	/// Accepting states
+	///
+	/// The `<final>` element can name more than one state, in which case the
+	/// automaton accepts when it ends in any of them.
 	#[serde(
 		rename = "final",
-		deserialize_with = "from_string",
-		serialize_with = "as_str"
+		deserialize_with = "from_string_vec",
+		serialize_with = "serialize_list"
 	)]
-	pub finish: Identifier,
+	pub finish: Vec<Identifier>,
 }
 
 /// Constraint that enforces that lists of expressions are lexicographically
