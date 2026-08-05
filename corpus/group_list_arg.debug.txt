@@ -38,9 +38,7 @@ Instance {
                             list: [
                                 Var(
                                     Placeholder(
-                                        Position(
-                                            0,
-                                        ),
+                                        Remainder,
                                     ),
                                 ),
                             ],
@@ -50,7 +48,7 @@ Instance {
                                 operand: Var(
                                     Placeholder(
                                         Position(
-                                            1,
+                                            0,
                                         ),
                                     ),
                                 ),
@@ -60,6 +58,11 @@ Instance {
                 ],
                 args: [
                     [
+                        Int(
+                            Const(
+                                6,
+                            ),
+                        ),
                         Var(
                             ArrayAccess(
                                 "x",
@@ -71,13 +74,13 @@ Instance {
                                 ],
                             ),
                         ),
-                        Int(
-                            Const(
-                                6,
-                            ),
-                        ),
                     ],
                     [
+                        Int(
+                            Const(
+                                5,
+                            ),
+                        ),
                         Var(
                             ArrayAccess(
                                 "x",
@@ -87,11 +90,6 @@ Instance {
                                     ),
                                     Full,
                                 ],
-                            ),
-                        ),
-                        Int(
-                            Const(
-                                5,
                             ),
                         ),
                     ],

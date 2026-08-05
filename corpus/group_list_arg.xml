@@ -5,11 +5,11 @@
   <constraints>
     <group>
       <sum>
-        <list> %0 </list>
-        <condition> (eq,%1) </condition>
+        <list> %... </list>
+        <condition> (eq,%0) </condition>
       </sum>
-      <args> x[0][] 6 </args>
-      <args> x[1][] 5 </args>
+      <args> 6 x[0][] </args>
+      <args> 5 x[1][] </args>
     </group>
   </constraints>
 </instance>

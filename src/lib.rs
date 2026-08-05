@@ -1133,10 +1133,10 @@ impl Display for Placeholder {
 impl<Identifier: Clone + Hash + Eq + ToString> VarRef<Identifier> {
 	/// Expand the reference into the list of expressions it denotes.
 	///
-	/// Placeholders are resolved using `args` (one entry per `<args>` token, so
-	/// a single placeholder can stand for a whole list) and `remainder` (the
-	/// flattened tokens matched by `%...`). Array slices are expanded using the
-	/// dimensions given in `arrays`.
+	/// Placeholders are resolved using `args` (the flattened `<args>` tokens,
+	/// one entry per argument) and `remainder` (the arguments beyond the
+	/// highest numbered placeholder, matched by `%...`). Array slices are
+	/// expanded using the dimensions given in `arrays`.
 	pub(crate) fn unroll(
 		&self,
 		arrays: &HashMap<Identifier, &[usize]>,
@@ -1353,7 +1353,8 @@ mod tests {
 
 	use crate::{
 		constraint::{Constraint, MetaConstraint},
-		Instance, Instantiation,
+		expression::IntExp,
+		Instance, Instantiation, SimpleRef,
 	};
 
 	fn test_successful_serialization<T: Debug + DeserializeOwned + Serialize + PartialEq>(
@@ -1703,5 +1704,34 @@ mod tests {
 		};
 		assert_eq!(c.lists.len(), 2, "expected one list per <list> element");
 		assert!(c.lists.iter().all(|l| l.len() == 3));
+	}
+
+	/// An `<args>` token that is an array slice stands for one argument per
+	/// element, so it fills as many numbered placeholders as it has elements.
+	#[test]
+	fn group_args_slice_fills_placeholders() {
+		let xml = r#"<instance format="XCSP3" type="CSP">
+			<variables><array id="x" size="[3]">0..2</array></variables>
+			<constraints>
+				<group>
+					<allDifferent> %0 %1 %2 </allDifferent>
+					<args> x[] </args>
+				</group>
+			</constraints>
+		</instance>"#;
+		let inst: Instance = quick_xml::de::from_str(xml).unwrap();
+		let constraints = inst.unroll_constraints().unwrap();
+		let [Constraint::AllDifferent(c)] = constraints.as_slice() else {
+			panic!("expected a single allDifferent constraint")
+		};
+		let bound: Vec<_> = c
+			.list
+			.iter()
+			.map(|e| match e {
+				IntExp::Var(SimpleRef::ArrayAccess(id, idx)) => (id.as_str(), idx.clone()),
+				_ => panic!("expected an array element, found {e:?}"),
+			})
+			.collect();
+		assert_eq!(bound, [("x", vec![0]), ("x", vec![1]), ("x", vec![2])]);
 	}
 }

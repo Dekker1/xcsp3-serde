@@ -2196,12 +2196,17 @@ impl<Identifier: Clone + Hash + Eq + ToString> Group<Identifier, VarRef<Identifi
 
 		let mut flat = Vec::with_capacity(self.constraints.len() * self.args.len());
 		for args in &self.args {
-			// Each `<args>` token is kept separate, since a single token (e.g.
-			// `x[0][]`) can stand for a whole list of expressions.
-			let expanded = args
+			// A single `<args>` token (e.g. `x[0][]`) can stand for several
+			// arguments, so the tokens are flattened before they are matched
+			// positionally: `%i` takes the i-th argument, never a whole list.
+			let expanded: Vec<Vec<_>> = args
 				.iter()
 				.map(|arg| arg.unroll(arrays, &[], &[]))
-				.collect::<Result<Vec<_>, _>>()?;
+				.collect::<Result<Vec<_>, _>>()?
+				.into_iter()
+				.flatten()
+				.map(|e| vec![e])
+				.collect();
 			// Tokens beyond the highest placeholder are matched by `%...`.
 			let remainder: Vec<_> = expanded[rem_start.min(expanded.len())..]
 				.iter()
