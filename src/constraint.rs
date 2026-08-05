@@ -5,7 +5,7 @@
 //! necessary information to represent the constraint in the XCSP3 format. The
 //! enumerated type [`Constraint`] is used to represent any of constraint.
 
-use std::{borrow::Cow, collections::HashMap, fmt::Display, hash::Hash, marker::PhantomData};
+use std::{collections::HashMap, fmt::Display, hash::Hash, marker::PhantomData};
 
 use nom::{
 	branch::alt,
@@ -385,9 +385,9 @@ pub struct Channel<Identifier = String, Var = VarRef<Identifier>> {
 	/// Optional metadata for the constraint
 	pub info: MetaInfo<Identifier>,
 	/// List of expressions that is being channelled
-	pub list: Vec<IntExp<Var>>,
+	pub list: OffsetList<Var>,
 	/// Inverse list of expressions that is being channelled
-	pub inverse_list: Vec<IntExp<Var>>,
+	pub inverse_list: OffsetList<Var>,
 	/// Expression representing the index of the only expression in [`Self::list`]
 	/// that is allowed to take the value 1.
 	pub value: Option<IntExp<Var>>,
@@ -1398,43 +1398,29 @@ impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de> for Channel<I
 		/// Deserialize a <channel> element
 		#[derive(Deserialize)]
 		#[serde(bound(deserialize = "I: From<String>, V: IntoVar"))]
-		struct Channel<'a, I, V> {
+		struct Channel<I, V> {
 			/// meta information
 			#[serde(flatten)]
 			info: MetaInfo<I>,
 			/// <list> element(s)
-			list: Vec<Cow<'a, str>>,
+			list: Vec<OffsetList<V>>,
 			/// <value> element
 			#[serde(default)]
 			value: Option<IntExp<V>>,
 		}
-		let c = Channel::deserialize(deserializer)?;
+		let mut c = Channel::deserialize(deserializer)?;
 		if c.list.is_empty() {
 			return Err(de::Error::missing_field("list"));
 		}
-		let (_, list) = all_consuming(whitespace_seperated(IntExp::parse))
-			.parse(c.list[0].trim())
-			.map_err(|_| {
-				de::Error::custom(format!(
-					"invalid integer expressions `{}'",
-					c.list[0].trim()
-				))
-			})?;
-		let inverse_list = if let Some(inverse_list) = c.list.get(1) {
-			let inverse_list = inverse_list.trim();
-			all_consuming(whitespace_seperated(IntExp::parse))
-				.parse(inverse_list)
-				.map_err(|_| {
-					de::Error::custom(format!("invalid integer expressions `{inverse_list}'"))
-				})?
-				.1
+		let inverse_list = if c.list.len() > 1 {
+			c.list.remove(1)
 		} else {
-			Vec::new()
+			OffsetList::default()
 		};
 
 		Ok(Self {
 			info: c.info,
-			list,
+			list: c.list.swap_remove(0),
 			inverse_list,
 			value: c.value,
 		})
@@ -1451,26 +1437,19 @@ impl<Identifier: Display, Var: Display> Serialize for Channel<Identifier, Var> {
 			#[serde(flatten)]
 			info: &'a MetaInfo<I>,
 			/// <list> element(s)
-			list: Vec<String>,
+			list: Vec<&'a OffsetList<V>>,
 			/// <value> element
 			#[serde(skip_serializing_if = "Option::is_none")]
 			value: &'a Option<IntExp<V>>,
 		}
 
-		let p = |i: &Vec<IntExp<Var>>| -> String {
-			i.iter()
-				.map(|e| format!("{}", e))
-				.collect::<Vec<_>>()
-				.join(" ")
-		};
-
 		let mut c = Channel {
 			info: &self.info,
-			list: vec![p(&self.list)],
+			list: vec![&self.list],
 			value: &self.value,
 		};
 		if !self.inverse_list.is_empty() {
-			c.list.push(p(&self.inverse_list))
+			c.list.push(&self.inverse_list)
 		}
 		c.serialize(serializer)
 	}
@@ -1611,8 +1590,9 @@ impl<Identifier, I> Constraint<Identifier, VarRef<I>> {
 				value,
 				..
 			}) => list
+				.list
 				.iter()
-				.chain(inverse_list)
+				.chain(&inverse_list.list)
 				.chain(value)
 				.filter_map(|exp| exp.max_placeholder())
 				.max(),
@@ -1844,8 +1824,14 @@ impl<Identifier: Clone + Hash + Eq + ToString> Constraint<Identifier, VarRef<Ide
 				};
 				Ok(Constraint::Channel(Channel {
 					info: info.clone(),
-					list: instantiate_ints(list)?,
-					inverse_list: instantiate_ints(inverse_list)?,
+					list: OffsetList {
+						list: instantiate_ints(&list.list)?,
+						start_index: list.start_index,
+					},
+					inverse_list: OffsetList {
+						list: instantiate_ints(&inverse_list.list)?,
+						start_index: inverse_list.start_index,
+					},
 					value,
 				}))
 			}

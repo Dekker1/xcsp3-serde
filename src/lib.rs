@@ -1343,7 +1343,10 @@ mod tests {
 	use expect_test::ExpectFile;
 	use serde::{de::DeserializeOwned, Serialize};
 
-	use crate::{Instance, Instantiation};
+	use crate::{
+		constraint::{Constraint, MetaConstraint},
+		Instance, Instantiation,
+	};
 
 	fn test_successful_serialization<T: Debug + DeserializeOwned + Serialize + PartialEq>(
 		file: &Path,
@@ -1599,4 +1602,27 @@ mod tests {
 	// test_file!(xcsp3_ex_189);
 	// test_file!(xcsp3_ex_190);
 	// test_file!(xcsp3_ex_191);
+
+	/// The `startIndex` of each `<list>` of a `channel` constraint must survive
+	/// deserialization: dropping it silently shifts every index of the
+	/// constraint.
+	#[test]
+	fn channel_start_index() {
+		let xml = r#"<instance format="XCSP3" type="CSP">
+			<variables><array id="y" size="[3]">0 2</array><array id="t" size="[3]">0 2</array></variables>
+			<constraints>
+				<channel><list startIndex="1">y[]</list><list startIndex="2">t[]</list></channel>
+			</constraints>
+		</instance>"#;
+		let inst: Instance = quick_xml::de::from_str(xml).unwrap();
+		let [MetaConstraint::Constraint(Constraint::Channel(c))] = inst.constraints.as_slice()
+		else {
+			panic!(
+				"expected a single channel constraint, found {:?}",
+				inst.constraints
+			)
+		};
+		assert_eq!(c.list.start_index, 1);
+		assert_eq!(c.inverse_list.start_index, 2);
+	}
 }

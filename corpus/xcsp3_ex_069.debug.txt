@@ -12,39 +12,45 @@ Instance {
                         ),
                         note: None,
                     },
-                    list: [
-                        Var(
-                            Ident(
-                                "z0",
+                    list: OffsetList {
+                        list: [
+                            Var(
+                                Ident(
+                                    "z0",
+                                ),
                             ),
-                        ),
-                        Var(
-                            Ident(
-                                "z1",
+                            Var(
+                                Ident(
+                                    "z1",
+                                ),
                             ),
-                        ),
-                        Var(
-                            Ident(
-                                "z2",
+                            Var(
+                                Ident(
+                                    "z2",
+                                ),
                             ),
-                        ),
-                        Var(
-                            Ident(
-                                "z3",
+                            Var(
+                                Ident(
+                                    "z3",
+                                ),
                             ),
-                        ),
-                        Var(
-                            Ident(
-                                "z4",
+                            Var(
+                                Ident(
+                                    "z4",
+                                ),
                             ),
-                        ),
-                        Var(
-                            Ident(
-                                "z5",
+                            Var(
+                                Ident(
+                                    "z5",
+                                ),
                             ),
-                        ),
-                    ],
-                    inverse_list: [],
+                        ],
+                        start_index: 0,
+                    },
+                    inverse_list: OffsetList {
+                        list: [],
+                        start_index: 0,
+                    },
                     value: Some(
                         Var(
                             Ident(
