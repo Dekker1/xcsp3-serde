@@ -1734,6 +1734,22 @@ impl<Identifier: Clone + Hash + Eq + ToString> Constraint<Identifier, VarRef<Ide
 				.map(|row| instantiate_ints(row))
 				.collect::<Result<Vec<_>, _>>()
 		};
+		// In the one-dimensional syntax every whitespace separated token is a box
+		// of its own, so a token that is an array slice stands for as many boxes
+		// as the slice has elements. A box written using the tuple syntax has one
+		// coordinate per dimension and keeps its shape.
+		let instantiate_boxes = |rows: &[Vec<IntExp<_>>]| {
+			let mut nrows = Vec::with_capacity(rows.len());
+			for row in rows {
+				let expanded = instantiate_ints(row)?;
+				if row.len() == 1 {
+					nrows.extend(expanded.into_iter().map(|e| vec![e]));
+				} else {
+					nrows.push(expanded);
+				}
+			}
+			Ok(nrows)
+		};
 		// A matrix given as a single array slice only gains its row structure
 		// here, where the dimensions of the array are known.
 		let instantiate_matrix = |rows: &[Vec<IntExp<_>>]| {
@@ -2023,8 +2039,8 @@ impl<Identifier: Clone + Hash + Eq + ToString> Constraint<Identifier, VarRef<Ide
 			}) => Ok(Constraint::NoOverlap(NoOverlap {
 				info: info.clone(),
 				zero_ignored: *zero_ignored,
-				origins: instantiate_int_rows(origins)?,
-				lengths: instantiate_int_rows(lengths)?,
+				origins: instantiate_boxes(origins)?,
+				lengths: instantiate_boxes(lengths)?,
 			})),
 			Constraint::Ordered(Ordered {
 				info,

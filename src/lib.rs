@@ -1660,4 +1660,48 @@ mod tests {
 		assert_eq!(c.start, "a");
 		assert_eq!(c.finish, vec!["c".to_owned(), "d".to_owned()]);
 	}
+
+	/// In the one-dimensional `noOverlap` syntax every token is a box of its
+	/// own, so an array slice stands for as many boxes as it has elements.
+	#[test]
+	fn no_overlap_one_dimensional_slice() {
+		let xml = r#"<instance format="XCSP3" type="CSP">
+			<variables><array id="s" size="[3]">0..5</array></variables>
+			<constraints>
+				<noOverlap><origins>s[]</origins><lengths>2 1 3</lengths></noOverlap>
+			</constraints>
+		</instance>"#;
+		let inst: Instance = quick_xml::de::from_str(xml).unwrap();
+		let constraints = inst.unroll_constraints().unwrap();
+		let [Constraint::NoOverlap(c)] = constraints.as_slice() else {
+			panic!("expected a single noOverlap constraint")
+		};
+		assert_eq!(
+			c.origins.len(),
+			3,
+			"expected one box per element of the slice"
+		);
+		assert!(c.origins.iter().all(|o| o.len() == 1));
+		assert_eq!(c.lengths.len(), 3);
+		assert!(c.lengths.iter().all(|l| l.len() == 1));
+	}
+
+	/// A `lex` list keeps its shape: an array slice is one list of several
+	/// expressions, not several lists of one expression.
+	#[test]
+	fn lex_slice_stays_one_list() {
+		let xml = r#"<instance format="XCSP3" type="CSP">
+			<variables><array id="x" size="[3]">0 5</array><array id="y" size="[3]">0 5</array></variables>
+			<constraints>
+				<lex><list>x[]</list><list>y[]</list><operator>le</operator></lex>
+			</constraints>
+		</instance>"#;
+		let inst: Instance = quick_xml::de::from_str(xml).unwrap();
+		let constraints = inst.unroll_constraints().unwrap();
+		let [Constraint::Lex(c)] = constraints.as_slice() else {
+			panic!("expected a single lex constraint")
+		};
+		assert_eq!(c.lists.len(), 2, "expected one list per <list> element");
+		assert!(c.lists.iter().all(|l| l.len() == 3));
+	}
 }
