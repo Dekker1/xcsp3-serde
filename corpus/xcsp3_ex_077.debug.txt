@@ -4,8 +4,8 @@ Instance {
     arrays: [],
     constraints: [
         Constraint(
-            BinPacking(
-                BinPacking {
+            BinPackingConditions(
+                BinPackingConditions {
                     info: MetaInfo {
                         identifier: Some(
                             "c3",
@@ -72,9 +72,33 @@ Instance {
                             30,
                         ),
                     ],
-                    condition: None,
-                    limits: [],
-                    loads: [],
+                    conditions: [
+                        Condition {
+                            operator: Le,
+                            operand: Int(
+                                Const(
+                                    20,
+                                ),
+                            ),
+                        },
+                        Condition {
+                            operator: Eq,
+                            operand: Int(
+                                Const(
+                                    8,
+                                ),
+                            ),
+                        },
+                        Condition {
+                            operator: Lt,
+                            operand: Var(
+                                Ident(
+                                    "l",
+                                ),
+                            ),
+                        },
+                    ],
+                    start_index: 0,
                 },
             ),
         ),

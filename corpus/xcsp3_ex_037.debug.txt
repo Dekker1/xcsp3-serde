@@ -75,13 +75,12 @@ Instance {
                             ),
                         ],
                     ],
-                    conflicts: [],
                 },
             ),
         ),
         Constraint(
-            Extension(
-                Extension {
+            ExtensionConflicts(
+                ExtensionConflicts {
                     info: MetaInfo {
                         identifier: Some(
                             "c2",
@@ -110,7 +109,6 @@ Instance {
                             ),
                         ),
                     ],
-                    supports: [],
                     conflicts: [
                         [
                             Some(

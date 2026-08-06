@@ -22,13 +22,12 @@ Instance {
     ],
     constraints: [
         Constraint(
-            Lex(
-                Lex {
+            LexMatrix(
+                LexMatrix {
                     info: MetaInfo {
                         identifier: None,
                         note: None,
                     },
-                    lists: [],
                     matrix: [
                         [
                             Var(

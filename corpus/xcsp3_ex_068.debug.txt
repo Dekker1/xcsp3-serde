@@ -4,8 +4,8 @@ Instance {
     arrays: [],
     constraints: [
         Constraint(
-            Channel(
-                Channel {
+            ChannelInverse(
+                ChannelInverse {
                     info: MetaInfo {
                         identifier: Some(
                             "c1",
@@ -72,7 +72,6 @@ Instance {
                         ],
                         start_index: 0,
                     },
-                    value: None,
                 },
             ),
         ),

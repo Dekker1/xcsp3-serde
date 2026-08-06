@@ -4,8 +4,8 @@ Instance {
     arrays: [],
     constraints: [
         Constraint(
-            BinPacking(
-                BinPacking {
+            BinPackingLoads(
+                BinPackingLoads {
                     info: MetaInfo {
                         identifier: Some(
                             "c2",
@@ -72,8 +72,6 @@ Instance {
                             30,
                         ),
                     ],
-                    condition: None,
-                    limits: [],
                     loads: [
                         Var(
                             Ident(

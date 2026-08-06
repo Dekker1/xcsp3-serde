@@ -32,28 +32,25 @@ Instance {
                         ],
                         start_index: 0,
                     },
-                    matrix: [],
-                    index: [
-                        Var(
-                            Ident(
-                                "i",
-                            ),
+                    index: Var(
+                        Ident(
+                            "i",
                         ),
-                    ],
-                    value: Some(
-                        Var(
+                    ),
+                    condition: Condition {
+                        operator: Eq,
+                        operand: Var(
                             Ident(
                                 "t",
                             ),
                         ),
-                    ),
-                    condition: None,
+                    },
                 },
             ),
         ),
         Constraint(
-            Element(
-                Element {
+            ElementMember(
+                ElementMember {
                     info: MetaInfo {
                         identifier: Some(
                             "c2",
@@ -85,16 +82,11 @@ Instance {
                         ],
                         start_index: 0,
                     },
-                    matrix: [],
-                    index: [],
-                    value: Some(
-                        Var(
-                            Ident(
-                                "t5",
-                            ),
+                    value: Var(
+                        Ident(
+                            "t5",
                         ),
                     ),
-                    condition: None,
                 },
             ),
         ),

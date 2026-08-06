@@ -1660,10 +1660,11 @@ mod tests {
 			</constraints>
 		</instance>"#;
 		let inst: Instance = quick_xml::de::from_str(xml).unwrap();
-		let [MetaConstraint::Constraint(Constraint::Channel(c))] = inst.constraints.as_slice()
+		let [MetaConstraint::Constraint(Constraint::ChannelInverse(c))] =
+			inst.constraints.as_slice()
 		else {
 			panic!(
-				"expected a single channel constraint, found {:?}",
+				"expected a single two-list channel constraint, found {:?}",
 				inst.constraints
 			)
 		};
@@ -1805,5 +1806,138 @@ mod tests {
 			})
 			.collect();
 		assert_eq!(coeffs, [("c", vec![0]), ("c", vec![1])]);
+	}
+
+	/// Several `<list>` elements select the `allDifferent-list` variant, in
+	/// which the tuples formed by the lists must be pairwise distinct. A single
+	/// `<list>` still selects the plain variant.
+	#[test]
+	fn all_different_repeated_lists() {
+		let xml = r#"<instance format="XCSP3" type="CSP">
+			<variables><array id="x" size="[2][3]">0..1</array></variables>
+			<constraints>
+				<allDifferent>
+					<list> x[0][] </list>
+					<list> x[1][] </list>
+				</allDifferent>
+			</constraints>
+		</instance>"#;
+		let inst: Instance = quick_xml::de::from_str(xml).unwrap();
+		let [MetaConstraint::Constraint(Constraint::AllDifferentList(c))] =
+			inst.constraints.as_slice()
+		else {
+			panic!("expected a single allDifferent-list constraint")
+		};
+		assert_eq!(c.lists.len(), 2, "expected one list per <list> element");
+
+		// The repeated `<list>` elements must survive a round trip.
+		let out = quick_xml::se::to_string(&inst).unwrap();
+		assert_eq!(inst, quick_xml::de::from_str(&out).unwrap());
+
+		let constraints = inst.unroll_constraints().unwrap();
+		let [Constraint::AllDifferentList(c)] = constraints.as_slice() else {
+			panic!("expected a single allDifferent-list constraint")
+		};
+		assert_eq!(c.lists.len(), 2, "each list is a tuple, not a box");
+		assert!(c.lists.iter().all(|l| l.len() == 3));
+	}
+
+	/// A [`Constraint`] can be deserialized on its own, not only as part of an
+	/// instance.
+	#[test]
+	fn constraint_deserializes_standalone() {
+		let c: Constraint =
+			quick_xml::de::from_str("<allDifferent> x1 x2 x3 </allDifferent>").unwrap();
+		let Constraint::AllDifferent(c) = c else {
+			panic!("expected an allDifferent constraint, found {c:?}")
+		};
+		assert_eq!(c.list.len(), 3);
+		// A meta-constraint is not a constraint.
+		assert!(quick_xml::de::from_str::<Constraint>(
+			"<block> <allDifferent> x </allDifferent> </block>"
+		)
+		.is_err());
+	}
+
+	/// An empty `<supports>` allows nothing and an empty `<conflicts>` forbids
+	/// nothing, so the two must stay distinguishable, both in memory and after
+	/// a round trip.
+	#[test]
+	fn extension_empty_table_keeps_its_polarity() {
+		let instance = |table: &str| {
+			format!(
+				r#"<instance format="XCSP3" type="CSP">
+					<variables><var id="x">0..1</var></variables>
+					<constraints><extension><list>x</list>{table}</extension></constraints>
+				</instance>"#
+			)
+		};
+		let parse = |table: &str| {
+			quick_xml::de::from_str::<Instance>(&instance(table))
+				.expect("expected a valid instance")
+		};
+
+		let supports = parse("<supports></supports>");
+		let conflicts = parse("<conflicts></conflicts>");
+		assert!(
+			matches!(
+				supports.constraints.as_slice(),
+				[MetaConstraint::Constraint(Constraint::Extension(_))]
+			),
+			"an empty <supports> must stay a positive table"
+		);
+		assert!(
+			matches!(
+				conflicts.constraints.as_slice(),
+				[MetaConstraint::Constraint(Constraint::ExtensionConflicts(
+					_
+				))]
+			),
+			"an empty <conflicts> must stay a negative table"
+		);
+		assert_ne!(supports, conflicts);
+
+		// Both survive a round trip, rather than collapsing to a table-less
+		// `<extension>`.
+		for inst in [supports, conflicts] {
+			let out = quick_xml::se::to_string(&inst).unwrap();
+			assert_eq!(inst, quick_xml::de::from_str(&out).unwrap(), "{out}");
+		}
+	}
+
+	/// An `element` over a matrix is indexed by a row and a column, and one
+	/// over a list by at most a single expression.
+	#[test]
+	fn element_index_matches_the_variant() {
+		let instance = |element: &str| {
+			format!(
+				r#"<instance format="XCSP3" type="CSP">
+					<variables><array id="x" size="[2][2]">0..1</array><var id="i">0..1</var></variables>
+					<constraints>{element}</constraints>
+				</instance>"#
+			)
+		};
+		let err = |element: &str| {
+			quick_xml::de::from_str::<Instance>(&instance(element))
+				.expect_err("expected the index to be rejected")
+				.to_string()
+		};
+
+		assert!(
+			err("<element><matrix>x[][]</matrix><index>i</index><value>1</value></element>")
+				.contains("row and a column index")
+		);
+		assert!(
+			err("<element><list>x[0][]</list><index>i i</index><value>1</value></element>")
+				.contains("at most one index")
+		);
+		// The matching forms are accepted.
+		for element in [
+			"<element><matrix>x[][]</matrix><index>i i</index><value>1</value></element>",
+			"<element><list>x[0][]</list><index>i</index><value>1</value></element>",
+			"<element><list>x[0][]</list><value>1</value></element>",
+		] {
+			let _: Instance = quick_xml::de::from_str(&instance(element)).unwrap();
+		}
 	}
 }

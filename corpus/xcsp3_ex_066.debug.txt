@@ -37,22 +37,19 @@ Instance {
                         ],
                         start_index: 1,
                     },
-                    matrix: [],
-                    index: [
-                        Var(
-                            Ident(
-                                "i",
-                            ),
+                    index: Var(
+                        Ident(
+                            "i",
                         ),
-                    ],
-                    value: Some(
-                        Var(
+                    ),
+                    condition: Condition {
+                        operator: Eq,
+                        operand: Var(
                             Ident(
                                 "v",
                             ),
                         ),
-                    ),
-                    condition: None,
+                    },
                 },
             ),
         ),

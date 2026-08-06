@@ -39,7 +39,6 @@ Instance {
                             ),
                         ),
                     ],
-                    matrix: [],
                     except: [],
                 },
             ),
@@ -63,7 +62,6 @@ Instance {
                             ),
                         ),
                     ],
-                    matrix: [],
                     except: [
                         0,
                     ],

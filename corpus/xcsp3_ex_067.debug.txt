@@ -30,25 +30,19 @@ Instance {
                         ],
                         start_index: 0,
                     },
-                    matrix: [],
-                    index: [
-                        Var(
+                    index: Var(
+                        Ident(
+                            "i",
+                        ),
+                    ),
+                    condition: Condition {
+                        operator: Eq,
+                        operand: Var(
                             Ident(
-                                "i",
+                                "v",
                             ),
                         ),
-                    ],
-                    value: None,
-                    condition: Some(
-                        Condition {
-                            operator: Eq,
-                            operand: Var(
-                                Ident(
-                                    "v",
-                                ),
-                            ),
-                        },
-                    ),
+                    },
                 },
             ),
         ),

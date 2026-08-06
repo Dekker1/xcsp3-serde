@@ -67,7 +67,6 @@
                     ),
                 ],
             ],
-            conflicts: [],
         },
     ),
     Extension(
@@ -138,7 +137,6 @@
                     ),
                 ],
             ],
-            conflicts: [],
         },
     ),
     Extension(
@@ -209,7 +207,6 @@
                     ),
                 ],
             ],
-            conflicts: [],
         },
     ),
 ]

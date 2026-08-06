@@ -32,24 +32,61 @@ use crate::{
 };
 
 macro_rules! constraints_enum {
-	($(#[$attr:meta])* $vis:vis $name:ident, $basic:meta, $meta:meta, $args:meta, $slide_list:meta) => {
+	($(#[$attr:meta])* $vis:vis $name:ident, $basic:meta, $meta:meta, $args:meta, $slide_list:meta, $split:meta) => {
 		$(#[$attr])*
 		$vis enum $name<Identifier = String, Var = VarRef<Identifier>> {
-			#[cfg($basic)]
+			#[cfg(all($basic, $split))]
 			/// [`AllDifferent`] constraint
 			AllDifferent(AllDifferent<Identifier, Var>),
+			#[cfg(all($basic, $split))]
+			/// [`AllDifferentList`] constraint
+			#[serde(rename = "allDifferent")]
+			AllDifferentList(AllDifferentList<Identifier, Var>),
+			#[cfg(all($basic, $split))]
+			/// [`AllDifferentMatrix`] constraint
+			#[serde(rename = "allDifferent")]
+			AllDifferentMatrix(AllDifferentMatrix<Identifier, Var>),
+			#[cfg(all($basic, not($split)))]
+			/// Any of the `allDifferent` constraints
+			AllDifferent(AllDifferentAny<Identifier, Var>),
 			#[cfg($basic)]
 			/// [`AllEqual`] constraint
 			AllEqual(AllEqual<Identifier, Var>),
-			#[cfg($basic)]
+			#[cfg(all($basic, $split))]
 			/// [`BinPacking`] constraint
 			BinPacking(BinPacking<Identifier, Var>),
+			#[cfg(all($basic, $split))]
+			/// [`BinPackingLimits`] constraint
+			#[serde(rename = "binPacking")]
+			BinPackingLimits(BinPackingLimits<Identifier, Var>),
+			#[cfg(all($basic, $split))]
+			/// [`BinPackingLoads`] constraint
+			#[serde(rename = "binPacking")]
+			BinPackingLoads(BinPackingLoads<Identifier, Var>),
+			#[cfg(all($basic, $split))]
+			/// [`BinPackingConditions`] constraint
+			#[serde(rename = "binPacking")]
+			BinPackingConditions(BinPackingConditions<Identifier, Var>),
+			#[cfg(all($basic, not($split)))]
+			/// Any of the `binPacking` constraints
+			BinPacking(BinPackingAny<Identifier, Var>),
 			#[cfg($basic)]
 			/// [`Cardinality`] constraint
 			Cardinality(Cardinality<Identifier, Var>),
-			#[cfg($basic)]
+			#[cfg(all($basic, $split))]
 			/// [`Channel`] constraint
 			Channel(Channel<Identifier, Var>),
+			#[cfg(all($basic, $split))]
+			/// [`ChannelInverse`] constraint
+			#[serde(rename = "channel")]
+			ChannelInverse(ChannelInverse<Identifier, Var>),
+			#[cfg(all($basic, $split))]
+			/// [`ChannelValue`] constraint
+			#[serde(rename = "channel")]
+			ChannelValue(ChannelValue<Identifier, Var>),
+			#[cfg(all($basic, not($split)))]
+			/// Any of the `channel` constraints
+			Channel(ChannelAny<Identifier, Var>),
 			#[cfg($basic)]
 			/// [`Circuit`] constraint
 			Circuit(Circuit<Identifier, Var>),
@@ -62,12 +99,30 @@ macro_rules! constraints_enum {
 			#[cfg($basic)]
 			/// [`Cumulative`] constraint
 			Cumulative(Cumulative<Identifier, Var>),
-			#[cfg($basic)]
+			#[cfg(all($basic, $split))]
 			/// [`Element`] constraint
 			Element(Element<Identifier, Var>),
-			#[cfg($basic)]
+			#[cfg(all($basic, $split))]
+			/// [`ElementMember`] constraint
+			#[serde(rename = "element")]
+			ElementMember(ElementMember<Identifier, Var>),
+			#[cfg(all($basic, $split))]
+			/// [`ElementMatrix`] constraint
+			#[serde(rename = "element")]
+			ElementMatrix(ElementMatrix<Identifier, Var>),
+			#[cfg(all($basic, not($split)))]
+			/// Any of the `element` constraints
+			Element(ElementAny<Identifier, Var>),
+			#[cfg(all($basic, $split))]
 			/// [`Extension`] constraint
 			Extension(Extension<Identifier, Var>),
+			#[cfg(all($basic, $split))]
+			/// [`ExtensionConflicts`] constraint
+			#[serde(rename = "extension")]
+			ExtensionConflicts(ExtensionConflicts<Identifier, Var>),
+			#[cfg(all($basic, not($split)))]
+			/// Any of the `extension` constraints
+			Extension(ExtensionAny<Identifier, Var>),
 			#[cfg($basic)]
 			/// [`Instantiation`] constraint
 			Instantiation(Instantiation<Identifier, Var>),
@@ -77,9 +132,16 @@ macro_rules! constraints_enum {
 			#[cfg($basic)]
 			/// [`Knapsack`] constraint
 			Knapsack(Knapsack<Identifier, Var>),
-			#[cfg($basic)]
+			#[cfg(all($basic, $split))]
 			/// [`Lex`] constraint
 			Lex(Lex<Identifier, Var>),
+			#[cfg(all($basic, $split))]
+			/// [`LexMatrix`] constraint
+			#[serde(rename = "lex")]
+			LexMatrix(LexMatrix<Identifier, Var>),
+			#[cfg(all($basic, not($split)))]
+			/// Any of the `lex` constraints
+			Lex(LexAny<Identifier, Var>),
 			#[cfg($basic)]
 			/// [`Maximum`] constraint
 			Maximum(Maximum<Identifier, Var>),
@@ -131,17 +193,18 @@ macro_rules! constraints_enum {
 }
 
 constraints_enum!(
-	#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+	#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 	#[serde(
-				rename_all = "camelCase",
-				bound(deserialize = "Identifier: From<String>, Var: IntoVar", serialize = "Identifier: Display, Var: Display")
+		rename_all = "camelCase",
+		bound(serialize = "Identifier: Display, Var: Display")
 	)]
 	/// Enumerated type to represent basic (instantiated) constraints
 	pub Constraint,
 	/* expand_basic = true */ all(),
 	/* meta = false */ any(),
 	/* template_args = false */ any(),
-	/* slide_list = false */ any()
+	/* slide_list = false */ any(),
+	/* split_variants = true */ all()
 );
 constraints_enum!(
 	#[derive(Clone, Debug, PartialEq, Hash)]
@@ -151,7 +214,8 @@ constraints_enum!(
 	/* expand_basic = false */ any(),
 	/* meta = true */ all(),
 	/* template_args = false */ any(),
-	/* slide_list = false */ any()
+	/* slide_list = false */ any(),
+	/* split_variants = true */ all()
 );
 constraints_enum!(
 	#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
@@ -167,7 +231,8 @@ constraints_enum!(
 	/* expand_basic = true */ all(),
 	/* meta = true */ all(),
 	/* template_args = false */ any(),
-	/* slide_list = false */ any()
+	/* slide_list = false */ any(),
+	/* split_variants = false */ any()
 );
 constraints_enum!(
 	#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
@@ -183,7 +248,8 @@ constraints_enum!(
 	/* expand_basic = true */ all(),
 	/* meta = true */ any(),
 	/* template_args = false */ all(),
-	/* slide_list = false */ any()
+	/* slide_list = false */ any(),
+	/* split_variants = false */ any()
 );
 constraints_enum!(
 	#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
@@ -200,7 +266,8 @@ constraints_enum!(
 	/* expand_basic = true */ all(),
 	/* meta = true */ any(),
 	/* template_args = false */ any(),
-	/* slide_list = true */ all()
+	/* slide_list = true */ all(),
+	/* split_variants = false */ any()
 );
 
 /// Constraint forcing a set of expressions to take distinct values
@@ -213,6 +280,7 @@ pub struct AllDifferent<Identifier = String, Var = VarRef<Identifier>> {
 	/// Optional metadata for the constraint
 	#[serde(flatten)]
 	pub info: MetaInfo<Identifier>,
+	/// List of expressions that must take distinct values
 	#[serde(
 		alias = "$text",
 		default,
@@ -220,16 +288,66 @@ pub struct AllDifferent<Identifier = String, Var = VarRef<Identifier>> {
 		deserialize_with = "IntExp::parse_vec",
 		serialize_with = "serialize_list"
 	)]
-	/// List of expressions that must take distinct values
 	pub list: Vec<IntExp<Var>>,
-	/// Matrix of expressions of which every row and every column must take
-	/// distinct values
-	///
-	/// This is the `allDifferent-matrix` variant, which is used instead of
-	/// [`Self::list`].
+	/// List of values that are excluded from the constraint and can be taken by
+	/// multiple expressions
 	#[serde(
 		default,
 		skip_serializing_if = "Vec::is_empty",
+		deserialize_with = "deserialize_int_vals",
+		serialize_with = "serialize_list"
+	)]
+	pub except: Vec<IntVal>,
+}
+
+/// Constraint forcing the tuples formed by several lists of expressions to be
+/// pairwise distinct
+///
+/// This is the `allDifferent-list` variant, written as an `<allDifferent>`
+/// element containing more than one `<list>`. Two tuples are distinct as soon
+/// as they differ in a single position.
+#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[serde(bound(
+	deserialize = "Identifier: From<String>, Var: IntoVar",
+	serialize = "Identifier: Display, Var: Display"
+))]
+pub struct AllDifferentList<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	#[serde(flatten)]
+	pub info: MetaInfo<Identifier>,
+	/// Lists of which the tuples they form must be pairwise distinct
+	#[serde(
+		rename = "list",
+		deserialize_with = "deserialize_exp_lists",
+		serialize_with = "serialize_exp_lists"
+	)]
+	pub lists: Matrix<Var>,
+	/// List of values that are excluded from the constraint and can be taken by
+	/// multiple expressions
+	#[serde(
+		default,
+		skip_serializing_if = "Vec::is_empty",
+		deserialize_with = "deserialize_int_vals",
+		serialize_with = "serialize_list"
+	)]
+	pub except: Vec<IntVal>,
+}
+
+/// Constraint forcing every row and every column of a matrix of expressions to
+/// take distinct values
+///
+/// This is the `allDifferent-matrix` variant.
+#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[serde(bound(
+	deserialize = "Identifier: From<String>, Var: IntoVar",
+	serialize = "Identifier: Display, Var: Display"
+))]
+pub struct AllDifferentMatrix<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	#[serde(flatten)]
+	pub info: MetaInfo<Identifier>,
+	/// Matrix of which every row and every column must take distinct values
+	#[serde(
 		deserialize_with = "deserialize_exp_tuples",
 		serialize_with = "serialize_exp_tuples"
 	)]
@@ -275,9 +393,9 @@ pub struct AllEqual<Identifier = String, Var = VarRef<Identifier>> {
 
 // TODO: Should `condition`, `limits` and `loads` be made mutually exclusive in
 // the struct?
-/// Constraint forcing a list of items, whose sizes are given, are put in
+/// Constraint forcing a list of items, whose sizes are given, to be put in
 /// different bins in such a way that the total size of the items in each bin
-/// respects a numerical condition.
+/// respects the same numerical condition.
 #[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
 #[serde(bound(
 	deserialize = "Identifier: From<String>, Var: IntoVar",
@@ -299,26 +417,205 @@ pub struct BinPacking<Identifier = String, Var = VarRef<Identifier>> {
 		serialize_with = "serialize_list"
 	)]
 	pub sizes: Vec<IntExp<Var>>,
-	/// Condition that must be respected by the total size of the items in each bin
-	#[serde(default, skip_serializing_if = "Option::is_none")]
-	pub condition: Option<Condition<Var>>,
+	/// Condition that must be respected by the total size of the items in each
+	/// bin
+	pub condition: Condition<Var>,
+}
+
+/// Constraint forcing a list of items, whose sizes are given, to be put in
+/// different bins in such a way that the total size of the items in each bin
+/// does not exceed the limit given for that bin.
+#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[serde(bound(
+	deserialize = "Identifier: From<String>, Var: IntoVar",
+	serialize = "Identifier: Display, Var: Display"
+))]
+pub struct BinPackingLimits<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	#[serde(flatten)]
+	pub info: MetaInfo<Identifier>,
+	/// List of expressions representing the bin in which each item is placed
 	#[serde(
-		default,
-		skip_serializing_if = "Vec::is_empty",
 		deserialize_with = "IntExp::parse_vec",
 		serialize_with = "serialize_list"
 	)]
-	/// List of expressions representing the limit for the total size of the items
-	/// in each bin
+	pub list: Vec<IntExp<Var>>,
+	/// List of expressions representing the size of each item
+	#[serde(
+		deserialize_with = "IntExp::parse_vec",
+		serialize_with = "serialize_list"
+	)]
+	pub sizes: Vec<IntExp<Var>>,
+	/// List of expressions representing the limit for the total size of the
+	/// items in each bin
+	#[serde(
+		deserialize_with = "IntExp::parse_vec",
+		serialize_with = "serialize_list"
+	)]
 	pub limits: Vec<IntExp<Var>>,
+}
+
+/// Constraint forcing a list of items, whose sizes are given, to be put in
+/// different bins in such a way that the total size of the items in each bin is
+/// equal to the load given for that bin.
+#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[serde(bound(
+	deserialize = "Identifier: From<String>, Var: IntoVar",
+	serialize = "Identifier: Display, Var: Display"
+))]
+pub struct BinPackingLoads<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	#[serde(flatten)]
+	pub info: MetaInfo<Identifier>,
+	/// List of expressions representing the bin in which each item is placed
+	#[serde(
+		deserialize_with = "IntExp::parse_vec",
+		serialize_with = "serialize_list"
+	)]
+	pub list: Vec<IntExp<Var>>,
+	/// List of expressions representing the size of each item
+	#[serde(
+		deserialize_with = "IntExp::parse_vec",
+		serialize_with = "serialize_list"
+	)]
+	pub sizes: Vec<IntExp<Var>>,
 	/// List of expressions representing the load of each bin
 	#[serde(
-		default,
-		skip_serializing_if = "Vec::is_empty",
 		deserialize_with = "IntExp::parse_vec",
 		serialize_with = "serialize_list"
 	)]
 	pub loads: Vec<IntExp<Var>>,
+}
+
+/// Constraint forcing a list of items, whose sizes are given, to be put in
+/// different bins in such a way that the total size of the items in each bin
+/// respects the numerical condition given for that bin.
+#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[serde(bound(
+	deserialize = "Identifier: From<String>, Var: IntoVar",
+	serialize = "Identifier: Display, Var: Display"
+))]
+pub struct BinPackingConditions<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	#[serde(flatten)]
+	pub info: MetaInfo<Identifier>,
+	/// List of expressions representing the bin in which each item is placed
+	#[serde(
+		deserialize_with = "IntExp::parse_vec",
+		serialize_with = "serialize_list"
+	)]
+	pub list: Vec<IntExp<Var>>,
+	/// List of expressions representing the size of each item
+	#[serde(
+		deserialize_with = "IntExp::parse_vec",
+		serialize_with = "serialize_list"
+	)]
+	pub sizes: Vec<IntExp<Var>>,
+	/// Condition that must be respected by the total size of the items in each
+	/// bin, one per bin
+	#[serde(
+		rename = "conditions",
+		deserialize_with = "deserialize_conditions",
+		serialize_with = "serialize_conditions"
+	)]
+	pub conditions: Vec<Condition<Var>>,
+	/// Index of the first bin, and so of the first condition
+	#[serde(rename = "@startIndex", default, skip_serializing_if = "is_default")]
+	pub start_index: IntVal,
+}
+
+/// Whichever of the `binPacking` constraints a `<binPacking>` element holds
+///
+/// The four forms share an XML element name, so they cannot be told apart by
+/// the tag alone. See [`AllDifferentAny`].
+#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
+#[serde(untagged, bound(serialize = "Identifier: Display, Var: Display"))]
+pub(crate) enum BinPackingAny<Identifier = String, Var = VarRef<Identifier>> {
+	/// A [`BinPacking`] constraint with a shared condition
+	Condition(BinPacking<Identifier, Var>),
+	/// A [`BinPackingLimits`] constraint
+	Limits(BinPackingLimits<Identifier, Var>),
+	/// A [`BinPackingLoads`] constraint
+	Loads(BinPackingLoads<Identifier, Var>),
+	/// A [`BinPackingConditions`] constraint with a condition per bin
+	Conditions(BinPackingConditions<Identifier, Var>),
+}
+
+impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de>
+	for BinPackingAny<Identifier, Var>
+{
+	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		/// The union of the contents of the four `binPacking` constraints
+		#[derive(Deserialize)]
+		#[serde(bound(deserialize = "I: From<String>, V: IntoVar"))]
+		struct BinPackingUnion<I, V> {
+			/// meta information
+			#[serde(flatten)]
+			info: MetaInfo<I>,
+			/// <list> element
+			#[serde(deserialize_with = "IntExp::parse_vec")]
+			list: Vec<IntExp<V>>,
+			/// <sizes> element
+			#[serde(deserialize_with = "IntExp::parse_vec")]
+			sizes: Vec<IntExp<V>>,
+			/// <condition> element
+			#[serde(default)]
+			condition: Option<Condition<V>>,
+			/// <limits> element
+			#[serde(default, deserialize_with = "IntExp::parse_vec")]
+			limits: Vec<IntExp<V>>,
+			/// <loads> element
+			#[serde(default, deserialize_with = "IntExp::parse_vec")]
+			loads: Vec<IntExp<V>>,
+			/// <conditions> element
+			#[serde(default, deserialize_with = "deserialize_conditions")]
+			conditions: Vec<Condition<V>>,
+			/// startIndex attribute of the <conditions> element
+			#[serde(rename = "@startIndex", default)]
+			start_index: IntVal,
+		}
+		let c = BinPackingUnion::deserialize(deserializer)?;
+		let given = usize::from(c.condition.is_some())
+			+ usize::from(!c.limits.is_empty())
+			+ usize::from(!c.loads.is_empty())
+			+ usize::from(!c.conditions.is_empty());
+		if given != 1 {
+			return Err(de::Error::custom(
+				"a `binPacking' constraint takes exactly one of a condition, limits, loads or conditions",
+			));
+		}
+		if let Some(condition) = c.condition {
+			return Ok(BinPackingAny::Condition(BinPacking {
+				info: c.info,
+				list: c.list,
+				sizes: c.sizes,
+				condition,
+			}));
+		}
+		if !c.limits.is_empty() {
+			return Ok(BinPackingAny::Limits(BinPackingLimits {
+				info: c.info,
+				list: c.list,
+				sizes: c.sizes,
+				limits: c.limits,
+			}));
+		}
+		if !c.loads.is_empty() {
+			return Ok(BinPackingAny::Loads(BinPackingLoads {
+				info: c.info,
+				list: c.list,
+				sizes: c.sizes,
+				loads: c.loads,
+			}));
+		}
+		Ok(BinPackingAny::Conditions(BinPackingConditions {
+			info: c.info,
+			list: c.list,
+			sizes: c.sizes,
+			conditions: c.conditions,
+			start_index: c.start_index,
+		}))
+	}
 }
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
@@ -372,25 +669,103 @@ pub struct Cardinality<Identifier = String, Var = VarRef<Identifier>> {
 
 /// Constraint that enforces that if the ith expression takes the value j, then
 /// the jth expression takes the value i.
-///
-/// If [`Self::inverse_list`] is not empty, then the constraint enforces that if
-/// the ith expression in [`Self::list`] takes the value j, then the jth
-/// expression in [`Self::inverse_list`] takes the value i.
-///
-/// If [`Self::value`] is not empty, then the constraint enforces that the ith
-/// expression in [`Self::list`] takes the value 1 iff the expression in
-/// [`Self::value`] takes the value i.
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub struct Channel<Identifier = String, Var = VarRef<Identifier>> {
 	/// Optional metadata for the constraint
 	pub info: MetaInfo<Identifier>,
 	/// List of expressions that is being channelled
 	pub list: OffsetList<Var>,
+}
+
+/// Constraint that enforces that if the ith expression of [`Self::list`] takes
+/// the value j, then the jth expression of [`Self::inverse_list`] takes the
+/// value i.
+///
+/// This form is also known as `inverse` or `assignment`. When the two lists are
+/// of the same length the implication holds in both directions.
+#[derive(Clone, Debug, PartialEq, Hash)]
+pub struct ChannelInverse<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	pub info: MetaInfo<Identifier>,
+	/// List of expressions that is being channelled
+	pub list: OffsetList<Var>,
 	/// Inverse list of expressions that is being channelled
 	pub inverse_list: OffsetList<Var>,
-	/// Expression representing the index of the only expression in [`Self::list`]
-	/// that is allowed to take the value 1.
-	pub value: Option<IntExp<Var>>,
+}
+
+/// Constraint that enforces that the ith expression of [`Self::list`], a list
+/// of 0/1 expressions, takes the value 1 if and only if [`Self::value`] takes
+/// the value i.
+#[derive(Clone, Debug, PartialEq, Hash)]
+pub struct ChannelValue<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	pub info: MetaInfo<Identifier>,
+	/// List of 0/1 expressions that is being channelled
+	pub list: OffsetList<Var>,
+	/// Expression representing the index of the only expression in
+	/// [`Self::list`] that takes the value 1
+	pub value: IntExp<Var>,
+}
+
+/// Whichever of the `channel` constraints a `<channel>` element holds
+///
+/// The three forms share an XML element name, so they cannot be told apart by
+/// the tag alone. See [`AllDifferentAny`].
+#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
+#[serde(untagged, bound(serialize = "Identifier: Display, Var: Display"))]
+pub(crate) enum ChannelAny<Identifier = String, Var = VarRef<Identifier>> {
+	/// A [`Channel`] constraint over a single list
+	Single(Channel<Identifier, Var>),
+	/// A [`ChannelInverse`] constraint over two lists
+	Inverse(ChannelInverse<Identifier, Var>),
+	/// A [`ChannelValue`] constraint
+	Value(ChannelValue<Identifier, Var>),
+}
+
+impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de> for ChannelAny<Identifier, Var> {
+	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		/// The union of the contents of the three `channel` constraints
+		#[derive(Deserialize)]
+		#[serde(bound(deserialize = "I: From<String>, V: IntoVar"))]
+		struct ChannelUnion<I, V> {
+			/// meta information
+			#[serde(flatten)]
+			info: MetaInfo<I>,
+			/// <list> element(s)
+			#[serde(default)]
+			list: Vec<OffsetList<V>>,
+			/// <value> element
+			#[serde(default)]
+			value: Option<IntExp<V>>,
+		}
+		let mut c = ChannelUnion::deserialize(deserializer)?;
+		if c.list.is_empty() {
+			return Err(de::Error::missing_field("list"));
+		}
+		if c.list.len() > 2 {
+			return Err(de::Error::custom(
+				"a `channel' constraint takes at most two lists",
+			));
+		}
+		let inverse_list = (c.list.len() > 1).then(|| c.list.remove(1));
+		let list = c.list.swap_remove(0);
+		match (inverse_list, c.value) {
+			(None, None) => Ok(ChannelAny::Single(Channel { info: c.info, list })),
+			(Some(inverse_list), None) => Ok(ChannelAny::Inverse(ChannelInverse {
+				info: c.info,
+				list,
+				inverse_list,
+			})),
+			(None, Some(value)) => Ok(ChannelAny::Value(ChannelValue {
+				info: c.info,
+				list,
+				value,
+			})),
+			(Some(_), Some(_)) => Err(de::Error::custom(
+				"a `channel' constraint takes either a second list or a value, not both",
+			)),
+		}
+	}
 }
 
 /// Constraint that ensures that the values of the expressions in [`Self::list`]
@@ -507,9 +882,8 @@ pub struct Cumulative<Identifier = String, Var = VarRef<Identifier>> {
 	pub condition: Condition<Var>,
 }
 
-/// Constraint that enforces that the value of the expression at
-/// [`Self::index`] abides by the given [`Self::condition`], or alternatively is
-/// equal the expression [`Self::value`].
+/// Constraint that enforces that the value of [`Self::list`] at [`Self::index`]
+/// abides by [`Self::condition`].
 #[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
 #[serde(bound(
 	deserialize = "Identifier: From<String>, Var: IntoVar",
@@ -520,41 +894,204 @@ pub struct Element<Identifier = String, Var = VarRef<Identifier>> {
 	#[serde(flatten)]
 	pub info: MetaInfo<Identifier>,
 	/// Indexed list of values
-	#[serde(default, skip_serializing_if = "OffsetList::is_empty")]
 	pub list: OffsetList<Var>,
-	/// Indexed matrix of values
-	///
-	/// This is the `element-matrix` variant, which is used instead of
-	/// [`Self::list`] and is indexed by two expressions.
-	#[serde(
-		default,
-		skip_serializing_if = "Vec::is_empty",
-		deserialize_with = "deserialize_exp_tuples",
-		serialize_with = "serialize_exp_tuples"
-	)]
-	pub matrix: Matrix<Var>,
 	/// Index of the value to be constrained
+	pub index: IntExp<Var>,
+	/// Condition to be enforced on the indexed value
 	///
-	/// The `element-matrix` variant is indexed by a row and a column, and
-	/// therefore has two index expressions.
-	#[serde(
-		default,
-		skip_serializing_if = "Vec::is_empty",
-		deserialize_with = "IntExp::parse_vec",
-		serialize_with = "serialize_list"
-	)]
-	pub index: Vec<IntExp<Var>>,
-	/// Value to be assigned to the indexed expression
-	#[serde(default, skip_serializing_if = "Option::is_none")]
-	pub value: Option<IntExp<Var>>,
-	/// Condition to be enforced on the indexed expression
-	#[serde(default, skip_serializing_if = "Option::is_none")]
-	pub condition: Option<Condition<Var>>,
+	/// A `<value>` element is a deprecated way of writing an `eq` condition, and
+	/// is read as one.
+	pub condition: Condition<Var>,
 }
 
-/// Constraint that enforces that the expressions in [`Self::list`] either take
-/// the values of one of the rows in [`Self::supports`], or alternatively do not
-/// match any of the rows in [`Self::conflicts`].
+/// Constraint that enforces that [`Self::value`] is equal to one of the values
+/// in [`Self::list`].
+///
+/// This is the membership form of `element`, written without an `<index>`.
+#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[serde(bound(
+	deserialize = "Identifier: From<String>, Var: IntoVar",
+	serialize = "Identifier: Display, Var: Display"
+))]
+pub struct ElementMember<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	#[serde(flatten)]
+	pub info: MetaInfo<Identifier>,
+	/// List of values of which one must be equal to [`Self::value`]
+	pub list: OffsetList<Var>,
+	/// Value that must occur in [`Self::list`]
+	pub value: IntExp<Var>,
+}
+
+/// Constraint that enforces that the value of [`Self::matrix`] at [`Self::row`]
+/// and [`Self::col`] abides by [`Self::condition`].
+///
+/// This is the `element-matrix` variant, which is indexed by a row and a column
+/// instead of by a single expression.
+#[derive(Clone, Debug, PartialEq, Hash)]
+pub struct ElementMatrix<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	pub info: MetaInfo<Identifier>,
+	/// Indexed matrix of values
+	pub matrix: Matrix<Var>,
+	/// Index of the row of the value to be constrained
+	pub row: IntExp<Var>,
+	/// Index of the column of the value to be constrained
+	pub col: IntExp<Var>,
+	/// Condition to be enforced on the indexed value
+	///
+	/// A `<value>` element is a deprecated way of writing an `eq` condition, and
+	/// is read as one.
+	pub condition: Condition<Var>,
+}
+
+impl<Identifier: Display, Var: Display> Serialize for ElementMatrix<Identifier, Var> {
+	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		/// Serialize an <element> element holding a <matrix>
+		///
+		/// The row and the column are written as a single <index> element.
+		#[derive(Serialize)]
+		#[serde(bound(serialize = "I: Display, V: Display"))]
+		struct AsMatrix<'a, I, V> {
+			/// meta information
+			#[serde(flatten)]
+			info: &'a MetaInfo<I>,
+			/// <matrix> element
+			#[serde(serialize_with = "serialize_exp_tuples")]
+			matrix: &'a Matrix<V>,
+			/// <index> element, holding the row and the column
+			#[serde(serialize_with = "serialize_list")]
+			index: Vec<&'a IntExp<V>>,
+			/// <condition> element
+			condition: &'a Condition<V>,
+		}
+		AsMatrix {
+			info: &self.info,
+			matrix: &self.matrix,
+			index: vec![&self.row, &self.col],
+			condition: &self.condition,
+		}
+		.serialize(serializer)
+	}
+}
+
+/// Whichever of the `element` constraints an `<element>` element holds
+///
+/// The two variants share an XML element name, so they cannot be told apart by
+/// the tag alone. See [`AllDifferentAny`].
+#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
+#[serde(untagged, bound(serialize = "Identifier: Display, Var: Display"))]
+pub(crate) enum ElementAny<Identifier = String, Var = VarRef<Identifier>> {
+	/// An indexed [`Element`] constraint
+	Indexed(Element<Identifier, Var>),
+	/// An [`ElementMember`] constraint
+	Member(ElementMember<Identifier, Var>),
+	/// An [`ElementMatrix`] constraint
+	Matrix(ElementMatrix<Identifier, Var>),
+}
+
+impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de> for ElementAny<Identifier, Var> {
+	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		/// The union of the contents of the three `element` constraints
+		#[derive(Deserialize)]
+		#[serde(bound(deserialize = "I: From<String>, V: IntoVar"))]
+		struct ElementUnion<I, V> {
+			/// meta information
+			#[serde(flatten)]
+			info: MetaInfo<I>,
+			/// <list> element
+			#[serde(default)]
+			list: OffsetList<V>,
+			/// <matrix> element
+			#[serde(default, deserialize_with = "deserialize_exp_tuples")]
+			matrix: Matrix<V>,
+			/// <index> element
+			#[serde(default, deserialize_with = "IntExp::parse_vec")]
+			index: Vec<IntExp<V>>,
+			/// <value> element, a deprecated way of writing an `eq` condition
+			#[serde(default)]
+			value: Option<IntExp<V>>,
+			/// <condition> element
+			#[serde(default)]
+			condition: Option<Condition<V>>,
+		}
+		/// Read the condition, accepting the deprecated `<value>` spelling
+		fn condition_of<V, E: de::Error>(
+			condition: Option<Condition<V>>,
+			value: Option<IntExp<V>>,
+		) -> Result<Condition<V>, E> {
+			match (condition, value) {
+				(Some(condition), None) => Ok(condition),
+				(None, Some(value)) => Ok(Condition {
+					operator: Operator::Eq,
+					// `Exp::parse` reads a bare variable as `Exp::Var`, so a
+					// converted value has to take the same shape to survive a
+					// round trip.
+					operand: match value {
+						IntExp::Var(var) => Exp::Var(var),
+						value => value.into(),
+					},
+				}),
+				(None, None) => Err(E::missing_field("condition")),
+				(Some(_), Some(_)) => Err(E::custom(
+					"an `element' constraint takes either a value or a condition, not both",
+				)),
+			}
+		}
+		let mut c = ElementUnion::deserialize(deserializer)?;
+		if !c.matrix.is_empty() {
+			if c.index.len() != 2 {
+				return Err(de::Error::custom(
+					"an `element' constraint over a matrix takes a row and a column index",
+				));
+			}
+			let col = c.index.pop().unwrap();
+			let row = c.index.pop().unwrap();
+			return Ok(ElementAny::Matrix(ElementMatrix {
+				info: c.info,
+				matrix: c.matrix,
+				row,
+				col,
+				condition: condition_of(c.condition, c.value)?,
+			}));
+		}
+		if c.index.len() > 1 {
+			return Err(de::Error::custom(
+				"an `element' constraint over a list takes at most one index",
+			));
+		}
+		match c.index.pop() {
+			Some(index) => Ok(ElementAny::Indexed(Element {
+				info: c.info,
+				list: c.list,
+				index,
+				condition: condition_of(c.condition, c.value)?,
+			})),
+			// Without an index, the constraint states that the value occurs in the
+			// list, so `<value>` keeps its own meaning rather than standing for a
+			// condition.
+			None => {
+				if c.condition.is_some() {
+					return Err(de::Error::missing_field("index"));
+				}
+				let Some(value) = c.value else {
+					return Err(de::Error::missing_field("value"));
+				};
+				Ok(ElementAny::Member(ElementMember {
+					info: c.info,
+					list: c.list,
+					value,
+				}))
+			}
+		}
+	}
+}
+
+/// Constraint that enforces that the expressions in [`Self::list`] take the
+/// values of one of the rows in [`Self::supports`]
+///
+/// This is the positive, or "supports", form of a table constraint. The
+/// negative form is [`ExtensionConflicts`].
 #[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
 #[serde(bound(
 	deserialize = "Identifier: From<String>, Var: IntoVar",
@@ -574,24 +1111,113 @@ pub struct Extension<Identifier = String, Var = VarRef<Identifier>> {
 	/// Combinations of values that the expressions are allowed to take
 	///
 	/// A [`None`] entry represents the star `*`, marking a position that is
-	/// allowed to take any value (a "short", or "starred", tuple).
+	/// allowed to take any value (a "short", or "starred", tuple). An empty
+	/// table allows nothing, and so makes the constraint unsatisfiable.
 	#[serde(
-		default,
-		skip_serializing_if = "Vec::is_empty",
 		deserialize_with = "deserialize_int_tuples",
 		serialize_with = "serialize_int_tuples"
 	)]
 	pub supports: Vec<Vec<Option<IntVal>>>,
+}
+
+/// Constraint that enforces that the expressions in [`Self::list`] do not match
+/// any of the rows in [`Self::conflicts`]
+///
+/// This is the negative, or "conflicts", form of a table constraint. The
+/// positive form is [`Extension`].
+#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[serde(bound(
+	deserialize = "Identifier: From<String>, Var: IntoVar",
+	serialize = "Identifier: Display, Var: Display"
+))]
+pub struct ExtensionConflicts<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	#[serde(flatten)]
+	pub info: MetaInfo<Identifier>,
+	/// List of expressions to be constrained
+	#[serde(
+		alias = "$text",
+		deserialize_with = "IntExp::parse_vec",
+		serialize_with = "serialize_list"
+	)]
+	pub list: Vec<IntExp<Var>>,
 	/// Combinations of values that the expressions are not allowed to take
 	///
-	/// A [`None`] entry represents the star `*`, see [`Self::supports`].
+	/// A [`None`] entry represents the star `*`, see [`Extension::supports`]. An
+	/// empty table forbids nothing, and so makes the constraint trivially true.
 	#[serde(
-		default,
-		skip_serializing_if = "Vec::is_empty",
 		deserialize_with = "deserialize_int_tuples",
 		serialize_with = "serialize_int_tuples"
 	)]
 	pub conflicts: Vec<Vec<Option<IntVal>>>,
+}
+
+/// Whichever of the `extension` constraints an `<extension>` element holds
+///
+/// The two forms share an XML element name, so they cannot be told apart by the
+/// tag alone. See [`AllDifferentAny`].
+#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
+#[serde(untagged, bound(serialize = "Identifier: Display, Var: Display"))]
+pub(crate) enum ExtensionAny<Identifier = String, Var = VarRef<Identifier>> {
+	/// A positive [`Extension`] constraint
+	Supports(Extension<Identifier, Var>),
+	/// A negative [`ExtensionConflicts`] constraint
+	Conflicts(ExtensionConflicts<Identifier, Var>),
+}
+
+impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de>
+	for ExtensionAny<Identifier, Var>
+{
+	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		/// The union of the contents of the two `extension` constraints
+		///
+		/// The tables are optional so that a table that is present but empty can
+		/// be told apart from one that is absent: the two forms differ only by
+		/// which element is given, and an empty table is meaningful.
+		#[derive(Deserialize)]
+		#[serde(bound(deserialize = "I: From<String>, V: IntoVar"))]
+		struct ExtensionUnion<I, V> {
+			/// meta information
+			#[serde(flatten)]
+			info: MetaInfo<I>,
+			/// <list> element
+			#[serde(alias = "$text", deserialize_with = "IntExp::parse_vec")]
+			list: Vec<IntExp<V>>,
+			/// <supports> element
+			#[serde(default, deserialize_with = "deserialize_int_tuples_opt")]
+			supports: Option<Vec<Vec<Option<IntVal>>>>,
+			/// <conflicts> element
+			#[serde(default, deserialize_with = "deserialize_int_tuples_opt")]
+			conflicts: Option<Vec<Vec<Option<IntVal>>>>,
+		}
+		let c = ExtensionUnion::deserialize(deserializer)?;
+		match (c.supports, c.conflicts) {
+			(Some(supports), None) => Ok(ExtensionAny::Supports(Extension {
+				info: c.info,
+				list: c.list,
+				supports,
+			})),
+			(None, Some(conflicts)) => Ok(ExtensionAny::Conflicts(ExtensionConflicts {
+				info: c.info,
+				list: c.list,
+				conflicts,
+			})),
+			(Some(_), Some(_)) => Err(de::Error::custom(
+				"an `extension' constraint takes either supports or conflicts, not both",
+			)),
+			(None, None) => Err(de::Error::missing_field("supports")),
+		}
+	}
+}
+
+/// Table of integer tuples, where a [`None`] entry represents the star `*`
+type IntTuples = Vec<Vec<Option<IntVal>>>;
+
+/// Deserialize a list of integer tuples that may be absent
+fn deserialize_int_tuples_opt<'de, D: Deserializer<'de>>(
+	deserializer: D,
+) -> Result<Option<IntTuples>, D::Error> {
+	deserialize_int_tuples(deserializer).map(Some)
 }
 
 #[derive(Clone, Debug, PartialEq, Hash)]
@@ -813,13 +1439,6 @@ pub struct OffsetList<Var> {
 	pub start_index: IntVal,
 }
 
-impl<Var> OffsetList<Var> {
-	/// Whether the list contains no expressions
-	fn is_empty(&self) -> bool {
-		self.list.is_empty()
-	}
-}
-
 /// Operator used as part of the [`Condition`] struct or a constraint.
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -945,28 +1564,89 @@ pub struct Lex<Identifier = String, Var = VarRef<Identifier>> {
 	/// Lists that must be ordered with respect to each other
 	#[serde(
 		rename = "list",
-		default,
-		skip_serializing_if = "Vec::is_empty",
 		deserialize_with = "deserialize_exp_lists",
 		serialize_with = "serialize_exp_lists"
 	)]
 	pub lists: Matrix<Var>,
-	/// Matrix of which both the rows and the columns must be ordered
-	///
-	/// This is the `lex-matrix` variant, which is used instead of
-	/// [`Self::lists`].
-	#[serde(
-		default,
-		skip_serializing_if = "Vec::is_empty",
-		deserialize_with = "deserialize_exp_tuples",
-		serialize_with = "serialize_exp_tuples"
-	)]
-	pub matrix: Matrix<Var>,
 	/// The operator used to order the lists
 	///
 	/// The operator must be either [`Operator::Lt`], [`Operator::Le`],
 	/// [`Operator::Ge`], or [`Operator::Gt`].
 	pub operator: Operator,
+}
+
+/// Constraint that enforces that both the rows and the columns of a matrix of
+/// expressions are lexicographically ordered according to [`Self::operator`].
+///
+/// This is the `lex-matrix` variant.
+#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[serde(bound(
+	deserialize = "Identifier: From<String>, Var: IntoVar",
+	serialize = "Identifier: Display, Var: Display"
+))]
+pub struct LexMatrix<Identifier = String, Var = VarRef<Identifier>> {
+	/// Optional metadata for the constraint
+	#[serde(flatten)]
+	pub info: MetaInfo<Identifier>,
+	/// Matrix of which both the rows and the columns must be ordered
+	#[serde(
+		deserialize_with = "deserialize_exp_tuples",
+		serialize_with = "serialize_exp_tuples"
+	)]
+	pub matrix: Matrix<Var>,
+	/// The operator used to order the rows and columns
+	///
+	/// The operator must be either [`Operator::Lt`], [`Operator::Le`],
+	/// [`Operator::Ge`], or [`Operator::Gt`].
+	pub operator: Operator,
+}
+
+/// Whichever of the `lex` constraints a `<lex>` element holds
+///
+/// The two variants share an XML element name, so they cannot be told apart by
+/// the tag alone. See [`AllDifferentAny`].
+#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
+#[serde(untagged, bound(serialize = "Identifier: Display, Var: Display"))]
+pub(crate) enum LexAny<Identifier = String, Var = VarRef<Identifier>> {
+	/// A [`Lex`] constraint over lists
+	Lists(Lex<Identifier, Var>),
+	/// A [`LexMatrix`] constraint
+	Matrix(LexMatrix<Identifier, Var>),
+}
+
+impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de> for LexAny<Identifier, Var> {
+	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		/// The union of the contents of the two `lex` constraints
+		#[derive(Deserialize)]
+		#[serde(bound(deserialize = "I: From<String>, V: IntoVar"))]
+		struct LexUnion<I, V> {
+			/// meta information
+			#[serde(flatten)]
+			info: MetaInfo<I>,
+			/// <list> element(s)
+			#[serde(rename = "list", default, deserialize_with = "deserialize_exp_lists")]
+			lists: Matrix<V>,
+			/// <matrix> element
+			#[serde(default, deserialize_with = "deserialize_exp_tuples")]
+			matrix: Matrix<V>,
+			/// <operator> element
+			operator: Operator,
+		}
+		let c = LexUnion::deserialize(deserializer)?;
+		Ok(if c.matrix.is_empty() {
+			LexAny::Lists(Lex {
+				info: c.info,
+				lists: c.lists,
+				operator: c.operator,
+			})
+		} else {
+			LexAny::Matrix(LexMatrix {
+				info: c.info,
+				matrix: c.matrix,
+				operator: c.operator,
+			})
+		})
+	}
 }
 
 /// Meta-constraint that instantiates a constraint template over successive
@@ -1401,46 +2081,85 @@ impl<Identifier: Display, Var: Display> Serialize for Cardinality<Identifier, Va
 	}
 }
 
-impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de> for Channel<Identifier, Var> {
+/// Whichever of the `allDifferent` constraints an `<allDifferent>` element
+/// holds
+///
+/// The three variants share an XML element name, so they cannot be told apart
+/// by the tag alone. This type reads the union of their contents and dispatches
+/// on it; the enums of constraints convert to and from it.
+#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
+#[serde(untagged, bound(serialize = "Identifier: Display, Var: Display"))]
+pub(crate) enum AllDifferentAny<Identifier = String, Var = VarRef<Identifier>> {
+	/// A plain [`AllDifferent`] constraint
+	Plain(AllDifferent<Identifier, Var>),
+	/// An [`AllDifferentList`] constraint
+	List(AllDifferentList<Identifier, Var>),
+	/// An [`AllDifferentMatrix`] constraint
+	Matrix(AllDifferentMatrix<Identifier, Var>),
+}
+
+impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de>
+	for AllDifferentAny<Identifier, Var>
+{
 	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-		/// Deserialize a <channel> element
+		/// The union of the contents of the three `allDifferent` constraints
+		///
+		/// The `<list>` elements are always read as a matrix, since a single
+		/// one selects the plain variant and several select the
+		/// `allDifferent-list` variant.
 		#[derive(Deserialize)]
 		#[serde(bound(deserialize = "I: From<String>, V: IntoVar"))]
-		struct Channel<I, V> {
+		struct AllDifferentUnion<I, V> {
 			/// meta information
 			#[serde(flatten)]
 			info: MetaInfo<I>,
+			/// text content, used instead of a <list> element
+			#[serde(rename = "$text", default, deserialize_with = "IntExp::parse_vec")]
+			text: Vec<IntExp<V>>,
 			/// <list> element(s)
-			list: Vec<OffsetList<V>>,
-			/// <value> element
-			#[serde(default)]
-			value: Option<IntExp<V>>,
+			#[serde(default, deserialize_with = "deserialize_exp_lists")]
+			list: Matrix<V>,
+			/// <matrix> element
+			#[serde(default, deserialize_with = "deserialize_exp_tuples")]
+			matrix: Matrix<V>,
+			/// <except> element
+			#[serde(default, deserialize_with = "deserialize_int_vals")]
+			except: Vec<IntVal>,
 		}
-		let mut c = Channel::deserialize(deserializer)?;
-		if c.list.is_empty() {
-			return Err(de::Error::missing_field("list"));
-		}
-		let inverse_list = if c.list.len() > 1 {
-			c.list.remove(1)
+		let mut c = AllDifferentUnion::deserialize(deserializer)?;
+		Ok(if !c.matrix.is_empty() {
+			AllDifferentAny::Matrix(AllDifferentMatrix {
+				info: c.info,
+				matrix: c.matrix,
+				except: c.except,
+			})
+		} else if c.list.len() > 1 {
+			AllDifferentAny::List(AllDifferentList {
+				info: c.info,
+				lists: c.list,
+				except: c.except,
+			})
 		} else {
-			OffsetList::default()
-		};
-
-		Ok(Self {
-			info: c.info,
-			list: c.list.swap_remove(0),
-			inverse_list,
-			value: c.value,
+			AllDifferentAny::Plain(AllDifferent {
+				info: c.info,
+				list: if c.list.is_empty() {
+					c.text
+				} else {
+					c.list.swap_remove(0)
+				},
+				except: c.except,
+			})
 		})
 	}
 }
 
-impl<Identifier: Display, Var: Display> Serialize for Channel<Identifier, Var> {
-	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-		/// Serialize a <channel> element
+/// Serialize a `channel` constraint, whose lists are written as repeated
+/// `<list>` elements
+macro_rules! serialize_channel {
+	($name:ident, $self:expr, $serializer:expr, $lists:expr, $value:expr) => {{
 		#[derive(Serialize)]
 		#[serde(bound(serialize = "I: Display, V: Display"))]
-		struct Channel<'a, I, V> {
+		struct Out<'a, I, V> {
 			/// meta information
 			#[serde(flatten)]
 			info: &'a MetaInfo<I>,
@@ -1448,18 +2167,44 @@ impl<Identifier: Display, Var: Display> Serialize for Channel<Identifier, Var> {
 			list: Vec<&'a OffsetList<V>>,
 			/// <value> element
 			#[serde(skip_serializing_if = "Option::is_none")]
-			value: &'a Option<IntExp<V>>,
+			value: Option<&'a IntExp<V>>,
 		}
+		Out {
+			info: &$self.info,
+			list: $lists,
+			value: $value,
+		}
+		.serialize($serializer)
+	}};
+}
 
-		let mut c = Channel {
-			info: &self.info,
-			list: vec![&self.list],
-			value: &self.value,
-		};
-		if !self.inverse_list.is_empty() {
-			c.list.push(&self.inverse_list)
-		}
-		c.serialize(serializer)
+impl<Identifier: Display, Var: Display> Serialize for Channel<Identifier, Var> {
+	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		serialize_channel!(Channel, self, serializer, vec![&self.list], None)
+	}
+}
+
+impl<Identifier: Display, Var: Display> Serialize for ChannelInverse<Identifier, Var> {
+	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		serialize_channel!(
+			ChannelInverse,
+			self,
+			serializer,
+			vec![&self.list, &self.inverse_list],
+			None
+		)
+	}
+}
+
+impl<Identifier: Display, Var: Display> Serialize for ChannelValue<Identifier, Var> {
+	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		serialize_channel!(
+			ChannelValue,
+			self,
+			serializer,
+			vec![&self.list],
+			Some(&self.value)
+		)
 	}
 }
 
@@ -1497,6 +2242,21 @@ impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de> for Circuit<I
 	}
 }
 
+impl<Var: IntoVar> Condition<Var> {
+	/// Parser combinator that parses a condition from a string
+	fn parse(input: &str) -> IResult<&str, Self> {
+		map(
+			delimited(
+				char('('),
+				separated_pair(Operator::parse, char(','), Exp::parse),
+				char(')'),
+			),
+			|(operator, operand)| Condition { operator, operand },
+		)
+		.parse(input)
+	}
+}
+
 impl<'de, Var: IntoVar> Deserialize<'de> for Condition<Var> {
 	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Condition<Var>, D::Error> {
 		/// Visitor for parsing a condition.
@@ -1510,19 +2270,52 @@ impl<'de, Var: IntoVar> Deserialize<'de> for Condition<Var> {
 
 			fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
 				let v = v.trim();
-				let mut parser = delimited(
-					char('('),
-					separated_pair(Operator::parse, char(','), Exp::parse),
-					char(')'),
-				);
-				let (_, (operator, operand)) = parser
+				let (_, condition) = all_consuming(Condition::parse)
 					.parse(v)
 					.map_err(|e| E::custom(format!("invalid condition {e:?}")))?;
-				Ok(Condition { operator, operand })
+				Ok(condition)
 			}
 		}
 		deserializer.deserialize_str(V(PhantomData::<Var>))
 	}
+}
+
+/// Deserialize a string as a sequence of conditions
+fn deserialize_conditions<'de, D: Deserializer<'de>, Var: IntoVar>(
+	deserializer: D,
+) -> Result<Vec<Condition<Var>>, D::Error> {
+	/// Visitor for parsing a sequence of conditions
+	struct V<X>(PhantomData<X>);
+	impl<X: IntoVar> Visitor<'_> for V<X> {
+		type Value = Vec<Condition<X>>;
+
+		fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+			formatter.write_str("a sequence of conditions")
+		}
+
+		fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+			let v = v.trim();
+			let (_, conditions) = all_consuming(sequence(Condition::parse))
+				.parse(v)
+				.map_err(|_| E::custom(format!("invalid conditions `{v}'")))?;
+			Ok(conditions)
+		}
+	}
+	deserializer.deserialize_str(V(PhantomData::<Var>))
+}
+
+/// Serialize a sequence of conditions as a string
+fn serialize_conditions<S: Serializer, Var: Display>(
+	conditions: &[Condition<Var>],
+	serializer: S,
+) -> Result<S::Ok, S::Error> {
+	serializer.serialize_str(
+		&conditions
+			.iter()
+			.map(|c| c.to_string())
+			.collect::<Vec<_>>()
+			.join(""),
+	)
 }
 
 impl<Identifier: Clone + Hash + Eq + ToString> Condition<VarRef<Identifier>> {
@@ -1554,13 +2347,16 @@ impl<Var: Display> Serialize for Condition<Var> {
 impl<Identifier, I> Constraint<Identifier, VarRef<I>> {
 	fn max_placeholder(&self) -> Option<usize> {
 		match self {
-			Constraint::AllDifferent(AllDifferent { list, matrix, .. }) => list
+			Constraint::AllDifferentList(AllDifferentList { lists: rows, .. })
+			| Constraint::AllDifferentMatrix(AllDifferentMatrix { matrix: rows, .. }) => rows
 				.iter()
-				.chain(matrix.iter().flatten())
+				.flatten()
 				.filter_map(|exp| exp.max_placeholder())
 				.max(),
-			Constraint::AllEqual(AllEqual { list, .. })
+			Constraint::AllDifferent(AllDifferent { list, .. })
+			| Constraint::AllEqual(AllEqual { list, .. })
 			| Constraint::Extension(Extension { list, .. })
+			| Constraint::ExtensionConflicts(ExtensionConflicts { list, .. })
 			| Constraint::Mdd(Mdd { list, .. })
 			| Constraint::Regular(Regular { list, .. })
 			| Constraint::Precedence(Precedence { list, .. }) => {
@@ -1570,16 +2366,44 @@ impl<Identifier, I> Constraint<Identifier, VarRef<I>> {
 				list,
 				sizes,
 				condition,
-				limits,
-				loads,
 				..
 			}) => list
 				.iter()
 				.chain(sizes)
-				.chain(limits)
-				.chain(loads)
 				.filter_map(|exp| exp.max_placeholder())
-				.chain(condition.as_ref().and_then(|c| c.operand.max_placeholder()))
+				.chain(condition.operand.max_placeholder())
+				.max(),
+			Constraint::BinPackingLimits(BinPackingLimits {
+				list,
+				sizes,
+				limits: extra,
+				..
+			})
+			| Constraint::BinPackingLoads(BinPackingLoads {
+				list,
+				sizes,
+				loads: extra,
+				..
+			}) => list
+				.iter()
+				.chain(sizes)
+				.chain(extra)
+				.filter_map(|exp| exp.max_placeholder())
+				.max(),
+			Constraint::BinPackingConditions(BinPackingConditions {
+				list,
+				sizes,
+				conditions,
+				..
+			}) => list
+				.iter()
+				.chain(sizes)
+				.filter_map(|exp| exp.max_placeholder())
+				.chain(
+					conditions
+						.iter()
+						.filter_map(|c| c.operand.max_placeholder()),
+				)
 				.max(),
 			Constraint::Cardinality(Cardinality {
 				list,
@@ -1592,16 +2416,23 @@ impl<Identifier, I> Constraint<Identifier, VarRef<I>> {
 				.filter_map(|exp| exp.max_placeholder())
 				.chain(occurs.iter().filter_map(|exp| exp.max_placeholder()))
 				.max(),
-			Constraint::Channel(Channel {
-				list,
-				inverse_list,
-				value,
-				..
+			Constraint::Channel(Channel { list, .. }) => list
+				.list
+				.iter()
+				.filter_map(|exp| exp.max_placeholder())
+				.max(),
+			Constraint::ChannelInverse(ChannelInverse {
+				list, inverse_list, ..
 			}) => list
 				.list
 				.iter()
 				.chain(&inverse_list.list)
-				.chain(value)
+				.filter_map(|exp| exp.max_placeholder())
+				.max(),
+			Constraint::ChannelValue(ChannelValue { list, value, .. }) => list
+				.list
+				.iter()
+				.chain([value])
 				.filter_map(|exp| exp.max_placeholder())
 				.max(),
 			Constraint::Circuit(Circuit {
@@ -1642,18 +2473,36 @@ impl<Identifier, I> Constraint<Identifier, VarRef<I>> {
 				.max(),
 			Constraint::Element(Element {
 				list: OffsetList { list, .. },
-				matrix,
 				index,
-				value,
 				condition,
 				..
 			}) => list
 				.iter()
-				.chain(matrix.iter().flatten())
-				.chain(index)
-				.chain(value)
+				.chain([index])
 				.filter_map(|exp| exp.max_placeholder())
-				.chain(condition.as_ref().and_then(|c| c.operand.max_placeholder()))
+				.chain(condition.operand.max_placeholder())
+				.max(),
+			Constraint::ElementMember(ElementMember {
+				list: OffsetList { list, .. },
+				value,
+				..
+			}) => list
+				.iter()
+				.chain([value])
+				.filter_map(|exp| exp.max_placeholder())
+				.max(),
+			Constraint::ElementMatrix(ElementMatrix {
+				matrix,
+				row,
+				col,
+				condition,
+				..
+			}) => matrix
+				.iter()
+				.flatten()
+				.chain([row, col])
+				.filter_map(|exp| exp.max_placeholder())
+				.chain(condition.operand.max_placeholder())
 				.max(),
 			Constraint::Instantiation(Instantiation { list, .. }) => list
 				.iter()
@@ -1673,9 +2522,9 @@ impl<Identifier, I> Constraint<Identifier, VarRef<I>> {
 				.filter_map(|e| e.max_placeholder())
 				.chain(condition.iter().filter_map(|c| c.operand.max_placeholder()))
 				.max(),
-			Constraint::Lex(Lex { lists, matrix, .. }) => lists
+			Constraint::Lex(Lex { lists: rows, .. })
+			| Constraint::LexMatrix(LexMatrix { matrix: rows, .. }) => rows
 				.iter()
-				.chain(matrix)
 				.flatten()
 				.filter_map(|e| e.max_placeholder())
 				.max(),
@@ -1790,14 +2639,28 @@ impl<Identifier: Clone + Hash + Eq + ToString> Constraint<Identifier, VarRef<Ide
 		};
 
 		match self {
-			Constraint::AllDifferent(AllDifferent {
+			Constraint::AllDifferent(AllDifferent { info, list, except }) => {
+				Ok(Constraint::AllDifferent(AllDifferent {
+					info: info.clone(),
+					list: instantiate_ints(list)?,
+					except: except.clone(),
+				}))
+			}
+			Constraint::AllDifferentList(AllDifferentList {
 				info,
-				list,
+				lists,
+				except,
+			}) => Ok(Constraint::AllDifferentList(AllDifferentList {
+				info: info.clone(),
+				lists: instantiate_int_rows(lists)?,
+				except: except.clone(),
+			})),
+			Constraint::AllDifferentMatrix(AllDifferentMatrix {
+				info,
 				matrix,
 				except,
-			}) => Ok(Constraint::AllDifferent(AllDifferent {
+			}) => Ok(Constraint::AllDifferentMatrix(AllDifferentMatrix {
 				info: info.clone(),
-				list: instantiate_ints(list)?,
 				matrix: instantiate_matrix(matrix)?,
 				except: except.clone(),
 			})),
@@ -1813,23 +2676,50 @@ impl<Identifier: Clone + Hash + Eq + ToString> Constraint<Identifier, VarRef<Ide
 				list,
 				sizes,
 				condition,
+			}) => Ok(Constraint::BinPacking(BinPacking {
+				info: info.clone(),
+				list: instantiate_ints(list)?,
+				sizes: instantiate_ints(sizes)?,
+				condition: condition.unroll(arrays, args, remainder)?,
+			})),
+			Constraint::BinPackingLimits(BinPackingLimits {
+				info,
+				list,
+				sizes,
 				limits,
+			}) => Ok(Constraint::BinPackingLimits(BinPackingLimits {
+				info: info.clone(),
+				list: instantiate_ints(list)?,
+				sizes: instantiate_ints(sizes)?,
+				limits: instantiate_ints(limits)?,
+			})),
+			Constraint::BinPackingLoads(BinPackingLoads {
+				info,
+				list,
+				sizes,
 				loads,
-			}) => {
-				let condition = if let Some(condition) = condition {
-					Some(condition.unroll(arrays, args, remainder)?)
-				} else {
-					None
-				};
-				Ok(Constraint::BinPacking(BinPacking {
-					info: info.clone(),
-					list: instantiate_ints(list)?,
-					sizes: instantiate_ints(sizes)?,
-					condition,
-					limits: instantiate_ints(limits)?,
-					loads: instantiate_ints(loads)?,
-				}))
-			}
+			}) => Ok(Constraint::BinPackingLoads(BinPackingLoads {
+				info: info.clone(),
+				list: instantiate_ints(list)?,
+				sizes: instantiate_ints(sizes)?,
+				loads: instantiate_ints(loads)?,
+			})),
+			Constraint::BinPackingConditions(BinPackingConditions {
+				info,
+				list,
+				sizes,
+				conditions,
+				start_index,
+			}) => Ok(Constraint::BinPackingConditions(BinPackingConditions {
+				info: info.clone(),
+				list: instantiate_ints(list)?,
+				sizes: instantiate_ints(sizes)?,
+				conditions: conditions
+					.iter()
+					.map(|c| c.unroll(arrays, args, remainder))
+					.collect::<Result<Vec<_>, _>>()?,
+				start_index: *start_index,
+			})),
 			Constraint::Cardinality(Cardinality {
 				info,
 				list,
@@ -1843,28 +2733,36 @@ impl<Identifier: Clone + Hash + Eq + ToString> Constraint<Identifier, VarRef<Ide
 				closed: *closed,
 				occurs: instantiate_exps(occurs)?,
 			})),
-			Constraint::Channel(Channel {
+			Constraint::Channel(Channel { info, list }) => Ok(Constraint::Channel(Channel {
+				info: info.clone(),
+				list: OffsetList {
+					list: instantiate_ints(&list.list)?,
+					start_index: list.start_index,
+				},
+			})),
+			Constraint::ChannelInverse(ChannelInverse {
 				info,
 				list,
 				inverse_list,
-				value,
-			}) => {
-				let value = if let Some(value) = value {
-					Some(value.unroll_single(arrays, args, remainder)?)
-				} else {
-					None
-				};
-				Ok(Constraint::Channel(Channel {
+			}) => Ok(Constraint::ChannelInverse(ChannelInverse {
+				info: info.clone(),
+				list: OffsetList {
+					list: instantiate_ints(&list.list)?,
+					start_index: list.start_index,
+				},
+				inverse_list: OffsetList {
+					list: instantiate_ints(&inverse_list.list)?,
+					start_index: inverse_list.start_index,
+				},
+			})),
+			Constraint::ChannelValue(ChannelValue { info, list, value }) => {
+				Ok(Constraint::ChannelValue(ChannelValue {
 					info: info.clone(),
 					list: OffsetList {
 						list: instantiate_ints(&list.list)?,
 						start_index: list.start_index,
 					},
-					inverse_list: OffsetList {
-						list: instantiate_ints(&inverse_list.list)?,
-						start_index: inverse_list.start_index,
-					},
-					value,
+					value: value.unroll_single(arrays, args, remainder)?,
 				}))
 			}
 			Constraint::Circuit(Circuit {
@@ -1920,43 +2818,58 @@ impl<Identifier: Clone + Hash + Eq + ToString> Constraint<Identifier, VarRef<Ide
 			Constraint::Element(Element {
 				info,
 				list: OffsetList { list, start_index },
-				matrix,
 				index,
-				value,
 				condition,
-			}) => {
-				let index = instantiate_ints(index)?;
-				let value = if let Some(value) = value {
-					Some(value.unroll_single(arrays, args, remainder)?)
-				} else {
-					None
-				};
-				let condition = if let Some(condition) = condition {
-					Some(condition.unroll(arrays, args, remainder)?)
-				} else {
-					None
-				};
-				Ok(Constraint::Element(Element {
-					info: info.clone(),
-					list: OffsetList {
-						list: instantiate_ints(list)?,
-						start_index: *start_index,
-					},
-					matrix: instantiate_matrix(matrix)?,
-					index,
-					value,
-					condition,
-				}))
-			}
+			}) => Ok(Constraint::Element(Element {
+				info: info.clone(),
+				list: OffsetList {
+					list: instantiate_ints(list)?,
+					start_index: *start_index,
+				},
+				index: index.unroll_single(arrays, args, remainder)?,
+				condition: condition.unroll(arrays, args, remainder)?,
+			})),
+			Constraint::ElementMember(ElementMember {
+				info,
+				list: OffsetList { list, start_index },
+				value,
+			}) => Ok(Constraint::ElementMember(ElementMember {
+				info: info.clone(),
+				list: OffsetList {
+					list: instantiate_ints(list)?,
+					start_index: *start_index,
+				},
+				value: value.unroll_single(arrays, args, remainder)?,
+			})),
+			Constraint::ElementMatrix(ElementMatrix {
+				info,
+				matrix,
+				row,
+				col,
+				condition,
+			}) => Ok(Constraint::ElementMatrix(ElementMatrix {
+				info: info.clone(),
+				matrix: instantiate_matrix(matrix)?,
+				row: row.unroll_single(arrays, args, remainder)?,
+				col: col.unroll_single(arrays, args, remainder)?,
+				condition: condition.unroll(arrays, args, remainder)?,
+			})),
 			Constraint::Extension(Extension {
 				info,
 				list,
 				supports,
-				conflicts,
 			}) => Ok(Constraint::Extension(Extension {
 				info: info.clone(),
 				list: instantiate_ints(list)?,
 				supports: supports.clone(),
+			})),
+			Constraint::ExtensionConflicts(ExtensionConflicts {
+				info,
+				list,
+				conflicts,
+			}) => Ok(Constraint::ExtensionConflicts(ExtensionConflicts {
+				info: info.clone(),
+				list: instantiate_ints(list)?,
 				conflicts: conflicts.clone(),
 			})),
 			Constraint::Instantiation(Instantiation {
@@ -1997,11 +2910,18 @@ impl<Identifier: Clone + Hash + Eq + ToString> Constraint<Identifier, VarRef<Ide
 			Constraint::Lex(Lex {
 				info,
 				lists,
-				matrix,
 				operator,
 			}) => Ok(Constraint::Lex(Lex {
 				info: info.clone(),
 				lists: instantiate_int_rows(lists)?,
+				operator: operator.clone(),
+			})),
+			Constraint::LexMatrix(LexMatrix {
+				info,
+				matrix,
+				operator,
+			}) => Ok(Constraint::LexMatrix(LexMatrix {
+				info: info.clone(),
 				matrix: instantiate_matrix(matrix)?,
 				operator: operator.clone(),
 			})),
@@ -2104,40 +3024,74 @@ impl<Identifier: Clone + Hash + Eq + ToString> Constraint<Identifier, VarRef<Ide
 	}
 }
 
+impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de> for Constraint<Identifier, Var> {
+	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		// The constraints that share an XML element name can only be told apart
+		// by their contents, which [`TemplateCapture`] already does for the
+		// constraints of a group.
+		TemplateCapture::deserialize(deserializer)?
+			.try_into()
+			.map_err(|()| de::Error::custom("expected a constraint"))
+	}
+}
+
 impl<Identifier, Var> TryFrom<TemplateCapture<Identifier, Var>> for Constraint<Identifier, Var> {
 	type Error = ();
 
 	fn try_from(value: TemplateCapture<Identifier, Var>) -> Result<Self, Self::Error> {
 		match value {
-			TemplateCapture::AllDifferent(all_different) => {
-				Ok(Constraint::AllDifferent(all_different))
+			TemplateCapture::AllDifferent(AllDifferentAny::Plain(c)) => {
+				Ok(Constraint::AllDifferent(c))
 			}
-			TemplateCapture::AllEqual(all_equal) => Ok(Constraint::AllEqual(all_equal)),
-			TemplateCapture::BinPacking(bin_packing) => Ok(Constraint::BinPacking(bin_packing)),
-			TemplateCapture::Cardinality(cardinality) => Ok(Constraint::Cardinality(cardinality)),
-			TemplateCapture::Channel(channel) => Ok(Constraint::Channel(channel)),
-			TemplateCapture::Circuit(circuit) => Ok(Constraint::Circuit(circuit)),
-			TemplateCapture::Clause(clause) => Ok(Constraint::Clause(clause)),
-			TemplateCapture::Count(count) => Ok(Constraint::Count(count)),
-			TemplateCapture::Cumulative(cumulative) => Ok(Constraint::Cumulative(cumulative)),
-			TemplateCapture::Element(element) => Ok(Constraint::Element(element)),
-			TemplateCapture::Extension(extension) => Ok(Constraint::Extension(extension)),
-			TemplateCapture::Instantiation(instantiation) => {
-				Ok(Constraint::Instantiation(instantiation))
+			TemplateCapture::AllDifferent(AllDifferentAny::List(c)) => {
+				Ok(Constraint::AllDifferentList(c))
 			}
-			TemplateCapture::Intension(intension) => Ok(Constraint::Intension(intension)),
-			TemplateCapture::Knapsack(knapsack) => Ok(Constraint::Knapsack(knapsack)),
-			TemplateCapture::Lex(lex) => Ok(Constraint::Lex(lex)),
-			TemplateCapture::Maximum(maximum) => Ok(Constraint::Maximum(maximum)),
-			TemplateCapture::Mdd(mdd) => Ok(Constraint::Mdd(mdd)),
-			TemplateCapture::Minimum(minimum) => Ok(Constraint::Minimum(minimum)),
-			TemplateCapture::NValues(nvalues) => Ok(Constraint::NValues(nvalues)),
-			TemplateCapture::NoOverlap(no_overlap) => Ok(Constraint::NoOverlap(no_overlap)),
-			TemplateCapture::Ordered(ordered) => Ok(Constraint::Ordered(ordered)),
-			TemplateCapture::Precedence(precedence) => Ok(Constraint::Precedence(precedence)),
-			TemplateCapture::Regular(regular) => Ok(Constraint::Regular(regular)),
-			TemplateCapture::Sum(sum) => Ok(Constraint::Sum(sum)),
+			TemplateCapture::AllDifferent(AllDifferentAny::Matrix(c)) => {
+				Ok(Constraint::AllDifferentMatrix(c))
+			}
+			TemplateCapture::AllEqual(c) => Ok(Constraint::AllEqual(c)),
 			TemplateCapture::Args(_) => Err(()),
+			TemplateCapture::BinPacking(BinPackingAny::Condition(c)) => {
+				Ok(Constraint::BinPacking(c))
+			}
+			TemplateCapture::BinPacking(BinPackingAny::Limits(c)) => {
+				Ok(Constraint::BinPackingLimits(c))
+			}
+			TemplateCapture::BinPacking(BinPackingAny::Loads(c)) => {
+				Ok(Constraint::BinPackingLoads(c))
+			}
+			TemplateCapture::BinPacking(BinPackingAny::Conditions(c)) => {
+				Ok(Constraint::BinPackingConditions(c))
+			}
+			TemplateCapture::Cardinality(c) => Ok(Constraint::Cardinality(c)),
+			TemplateCapture::Channel(ChannelAny::Single(c)) => Ok(Constraint::Channel(c)),
+			TemplateCapture::Channel(ChannelAny::Inverse(c)) => Ok(Constraint::ChannelInverse(c)),
+			TemplateCapture::Channel(ChannelAny::Value(c)) => Ok(Constraint::ChannelValue(c)),
+			TemplateCapture::Circuit(c) => Ok(Constraint::Circuit(c)),
+			TemplateCapture::Clause(c) => Ok(Constraint::Clause(c)),
+			TemplateCapture::Count(c) => Ok(Constraint::Count(c)),
+			TemplateCapture::Cumulative(c) => Ok(Constraint::Cumulative(c)),
+			TemplateCapture::Element(ElementAny::Indexed(c)) => Ok(Constraint::Element(c)),
+			TemplateCapture::Element(ElementAny::Member(c)) => Ok(Constraint::ElementMember(c)),
+			TemplateCapture::Element(ElementAny::Matrix(c)) => Ok(Constraint::ElementMatrix(c)),
+			TemplateCapture::Extension(ExtensionAny::Supports(c)) => Ok(Constraint::Extension(c)),
+			TemplateCapture::Extension(ExtensionAny::Conflicts(c)) => {
+				Ok(Constraint::ExtensionConflicts(c))
+			}
+			TemplateCapture::Instantiation(c) => Ok(Constraint::Instantiation(c)),
+			TemplateCapture::Intension(c) => Ok(Constraint::Intension(c)),
+			TemplateCapture::Knapsack(c) => Ok(Constraint::Knapsack(c)),
+			TemplateCapture::Lex(LexAny::Lists(c)) => Ok(Constraint::Lex(c)),
+			TemplateCapture::Lex(LexAny::Matrix(c)) => Ok(Constraint::LexMatrix(c)),
+			TemplateCapture::Maximum(c) => Ok(Constraint::Maximum(c)),
+			TemplateCapture::Mdd(c) => Ok(Constraint::Mdd(c)),
+			TemplateCapture::Minimum(c) => Ok(Constraint::Minimum(c)),
+			TemplateCapture::NValues(c) => Ok(Constraint::NValues(c)),
+			TemplateCapture::NoOverlap(c) => Ok(Constraint::NoOverlap(c)),
+			TemplateCapture::Ordered(c) => Ok(Constraint::Ordered(c)),
+			TemplateCapture::Precedence(c) => Ok(Constraint::Precedence(c)),
+			TemplateCapture::Regular(c) => Ok(Constraint::Regular(c)),
+			TemplateCapture::Sum(c) => Ok(Constraint::Sum(c)),
 		}
 	}
 }
@@ -2147,35 +3101,54 @@ impl<Identifier, Var> TryFrom<SlideCapture<Identifier, Var>> for Constraint<Iden
 
 	fn try_from(value: SlideCapture<Identifier, Var>) -> Result<Self, Self::Error> {
 		match value {
-			SlideCapture::AllDifferent(all_different) => {
-				Ok(Constraint::AllDifferent(all_different))
+			SlideCapture::AllDifferent(AllDifferentAny::Plain(c)) => {
+				Ok(Constraint::AllDifferent(c))
 			}
-			SlideCapture::AllEqual(all_equal) => Ok(Constraint::AllEqual(all_equal)),
-			SlideCapture::BinPacking(bin_packing) => Ok(Constraint::BinPacking(bin_packing)),
-			SlideCapture::Cardinality(cardinality) => Ok(Constraint::Cardinality(cardinality)),
-			SlideCapture::Channel(channel) => Ok(Constraint::Channel(channel)),
-			SlideCapture::Circuit(circuit) => Ok(Constraint::Circuit(circuit)),
-			SlideCapture::Clause(clause) => Ok(Constraint::Clause(clause)),
-			SlideCapture::Count(count) => Ok(Constraint::Count(count)),
-			SlideCapture::Cumulative(cumulative) => Ok(Constraint::Cumulative(cumulative)),
-			SlideCapture::Element(element) => Ok(Constraint::Element(element)),
-			SlideCapture::Extension(extension) => Ok(Constraint::Extension(extension)),
-			SlideCapture::Instantiation(instantiation) => {
-				Ok(Constraint::Instantiation(instantiation))
+			SlideCapture::AllDifferent(AllDifferentAny::List(c)) => {
+				Ok(Constraint::AllDifferentList(c))
 			}
-			SlideCapture::Intension(intension) => Ok(Constraint::Intension(intension)),
-			SlideCapture::Knapsack(knapsack) => Ok(Constraint::Knapsack(knapsack)),
-			SlideCapture::Lex(lex) => Ok(Constraint::Lex(lex)),
-			SlideCapture::Maximum(maximum) => Ok(Constraint::Maximum(maximum)),
-			SlideCapture::Mdd(mdd) => Ok(Constraint::Mdd(mdd)),
-			SlideCapture::Minimum(minimum) => Ok(Constraint::Minimum(minimum)),
-			SlideCapture::NValues(nvalues) => Ok(Constraint::NValues(nvalues)),
-			SlideCapture::NoOverlap(no_overlap) => Ok(Constraint::NoOverlap(no_overlap)),
-			SlideCapture::Ordered(ordered) => Ok(Constraint::Ordered(ordered)),
-			SlideCapture::Precedence(precedence) => Ok(Constraint::Precedence(precedence)),
-			SlideCapture::Regular(regular) => Ok(Constraint::Regular(regular)),
-			SlideCapture::Sum(sum) => Ok(Constraint::Sum(sum)),
+			SlideCapture::AllDifferent(AllDifferentAny::Matrix(c)) => {
+				Ok(Constraint::AllDifferentMatrix(c))
+			}
+			SlideCapture::AllEqual(c) => Ok(Constraint::AllEqual(c)),
+			SlideCapture::BinPacking(BinPackingAny::Condition(c)) => Ok(Constraint::BinPacking(c)),
+			SlideCapture::BinPacking(BinPackingAny::Limits(c)) => {
+				Ok(Constraint::BinPackingLimits(c))
+			}
+			SlideCapture::BinPacking(BinPackingAny::Loads(c)) => Ok(Constraint::BinPackingLoads(c)),
+			SlideCapture::BinPacking(BinPackingAny::Conditions(c)) => {
+				Ok(Constraint::BinPackingConditions(c))
+			}
+			SlideCapture::Cardinality(c) => Ok(Constraint::Cardinality(c)),
+			SlideCapture::Channel(ChannelAny::Single(c)) => Ok(Constraint::Channel(c)),
+			SlideCapture::Channel(ChannelAny::Inverse(c)) => Ok(Constraint::ChannelInverse(c)),
+			SlideCapture::Channel(ChannelAny::Value(c)) => Ok(Constraint::ChannelValue(c)),
+			SlideCapture::Circuit(c) => Ok(Constraint::Circuit(c)),
+			SlideCapture::Clause(c) => Ok(Constraint::Clause(c)),
+			SlideCapture::Count(c) => Ok(Constraint::Count(c)),
+			SlideCapture::Cumulative(c) => Ok(Constraint::Cumulative(c)),
+			SlideCapture::Element(ElementAny::Indexed(c)) => Ok(Constraint::Element(c)),
+			SlideCapture::Element(ElementAny::Member(c)) => Ok(Constraint::ElementMember(c)),
+			SlideCapture::Element(ElementAny::Matrix(c)) => Ok(Constraint::ElementMatrix(c)),
+			SlideCapture::Extension(ExtensionAny::Supports(c)) => Ok(Constraint::Extension(c)),
+			SlideCapture::Extension(ExtensionAny::Conflicts(c)) => {
+				Ok(Constraint::ExtensionConflicts(c))
+			}
+			SlideCapture::Instantiation(c) => Ok(Constraint::Instantiation(c)),
+			SlideCapture::Intension(c) => Ok(Constraint::Intension(c)),
+			SlideCapture::Knapsack(c) => Ok(Constraint::Knapsack(c)),
+			SlideCapture::Lex(LexAny::Lists(c)) => Ok(Constraint::Lex(c)),
+			SlideCapture::Lex(LexAny::Matrix(c)) => Ok(Constraint::LexMatrix(c)),
 			SlideCapture::List(_) => Err(()),
+			SlideCapture::Maximum(c) => Ok(Constraint::Maximum(c)),
+			SlideCapture::Mdd(c) => Ok(Constraint::Mdd(c)),
+			SlideCapture::Minimum(c) => Ok(Constraint::Minimum(c)),
+			SlideCapture::NValues(c) => Ok(Constraint::NValues(c)),
+			SlideCapture::NoOverlap(c) => Ok(Constraint::NoOverlap(c)),
+			SlideCapture::Ordered(c) => Ok(Constraint::Ordered(c)),
+			SlideCapture::Precedence(c) => Ok(Constraint::Precedence(c)),
+			SlideCapture::Regular(c) => Ok(Constraint::Regular(c)),
+			SlideCapture::Sum(c) => Ok(Constraint::Sum(c)),
 		}
 	}
 }
@@ -2478,73 +3451,86 @@ impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de>
 impl<Identifier, Var> From<CaptureConstraint<Identifier, Var>> for MetaConstraint<Identifier, Var> {
 	fn from(value: CaptureConstraint<Identifier, Var>) -> Self {
 		match value {
-			CaptureConstraint::AllDifferent(all_different) => {
-				MetaConstraint::Constraint(Constraint::AllDifferent(all_different))
+			CaptureConstraint::AllDifferent(AllDifferentAny::Plain(c)) => {
+				MetaConstraint::Constraint(Constraint::AllDifferent(c))
 			}
-			CaptureConstraint::AllEqual(all_equal) => {
-				MetaConstraint::Constraint(Constraint::AllEqual(all_equal))
+			CaptureConstraint::AllDifferent(AllDifferentAny::List(c)) => {
+				MetaConstraint::Constraint(Constraint::AllDifferentList(c))
 			}
-			CaptureConstraint::BinPacking(bin_packing) => {
-				MetaConstraint::Constraint(Constraint::BinPacking(bin_packing))
+			CaptureConstraint::AllDifferent(AllDifferentAny::Matrix(c)) => {
+				MetaConstraint::Constraint(Constraint::AllDifferentMatrix(c))
 			}
-			CaptureConstraint::Cardinality(cardinality) => {
-				MetaConstraint::Constraint(Constraint::Cardinality(cardinality))
+			CaptureConstraint::AllEqual(c) => MetaConstraint::Constraint(Constraint::AllEqual(c)),
+			CaptureConstraint::BinPacking(BinPackingAny::Condition(c)) => {
+				MetaConstraint::Constraint(Constraint::BinPacking(c))
 			}
-			CaptureConstraint::Channel(channel) => {
-				MetaConstraint::Constraint(Constraint::Channel(channel))
+			CaptureConstraint::BinPacking(BinPackingAny::Limits(c)) => {
+				MetaConstraint::Constraint(Constraint::BinPackingLimits(c))
 			}
-			CaptureConstraint::Circuit(circuit) => {
-				MetaConstraint::Constraint(Constraint::Circuit(circuit))
+			CaptureConstraint::BinPacking(BinPackingAny::Loads(c)) => {
+				MetaConstraint::Constraint(Constraint::BinPackingLoads(c))
 			}
-			CaptureConstraint::Clause(clause) => {
-				MetaConstraint::Constraint(Constraint::Clause(clause))
+			CaptureConstraint::BinPacking(BinPackingAny::Conditions(c)) => {
+				MetaConstraint::Constraint(Constraint::BinPackingConditions(c))
 			}
-			CaptureConstraint::Count(count) => MetaConstraint::Constraint(Constraint::Count(count)),
-			CaptureConstraint::Cumulative(cumulative) => {
-				MetaConstraint::Constraint(Constraint::Cumulative(cumulative))
+			CaptureConstraint::Block(c) => MetaConstraint::Block(c),
+			CaptureConstraint::Cardinality(c) => {
+				MetaConstraint::Constraint(Constraint::Cardinality(c))
 			}
-			CaptureConstraint::Element(element) => {
-				MetaConstraint::Constraint(Constraint::Element(element))
+			CaptureConstraint::Channel(ChannelAny::Single(c)) => {
+				MetaConstraint::Constraint(Constraint::Channel(c))
 			}
-			CaptureConstraint::Extension(extension) => {
-				MetaConstraint::Constraint(Constraint::Extension(extension))
+			CaptureConstraint::Channel(ChannelAny::Inverse(c)) => {
+				MetaConstraint::Constraint(Constraint::ChannelInverse(c))
 			}
-			CaptureConstraint::Instantiation(instantiation) => {
-				MetaConstraint::Constraint(Constraint::Instantiation(instantiation))
+			CaptureConstraint::Channel(ChannelAny::Value(c)) => {
+				MetaConstraint::Constraint(Constraint::ChannelValue(c))
 			}
-			CaptureConstraint::Intension(intension) => {
-				MetaConstraint::Constraint(Constraint::Intension(intension))
+			CaptureConstraint::Circuit(c) => MetaConstraint::Constraint(Constraint::Circuit(c)),
+			CaptureConstraint::Clause(c) => MetaConstraint::Constraint(Constraint::Clause(c)),
+			CaptureConstraint::Count(c) => MetaConstraint::Constraint(Constraint::Count(c)),
+			CaptureConstraint::Cumulative(c) => {
+				MetaConstraint::Constraint(Constraint::Cumulative(c))
 			}
-			CaptureConstraint::Knapsack(knapsack) => {
-				MetaConstraint::Constraint(Constraint::Knapsack(knapsack))
+			CaptureConstraint::Element(ElementAny::Indexed(c)) => {
+				MetaConstraint::Constraint(Constraint::Element(c))
 			}
-			CaptureConstraint::Lex(lex) => MetaConstraint::Constraint(Constraint::Lex(lex)),
-			CaptureConstraint::Maximum(maximum) => {
-				MetaConstraint::Constraint(Constraint::Maximum(maximum))
+			CaptureConstraint::Element(ElementAny::Member(c)) => {
+				MetaConstraint::Constraint(Constraint::ElementMember(c))
 			}
-			CaptureConstraint::Mdd(mdd) => MetaConstraint::Constraint(Constraint::Mdd(mdd)),
-			CaptureConstraint::Minimum(minimum) => {
-				MetaConstraint::Constraint(Constraint::Minimum(minimum))
+			CaptureConstraint::Element(ElementAny::Matrix(c)) => {
+				MetaConstraint::Constraint(Constraint::ElementMatrix(c))
 			}
-			CaptureConstraint::NValues(nvalues) => {
-				MetaConstraint::Constraint(Constraint::NValues(nvalues))
+			CaptureConstraint::Extension(ExtensionAny::Supports(c)) => {
+				MetaConstraint::Constraint(Constraint::Extension(c))
 			}
-			CaptureConstraint::NoOverlap(no_overlap) => {
-				MetaConstraint::Constraint(Constraint::NoOverlap(no_overlap))
+			CaptureConstraint::Extension(ExtensionAny::Conflicts(c)) => {
+				MetaConstraint::Constraint(Constraint::ExtensionConflicts(c))
 			}
-			CaptureConstraint::Ordered(ordered) => {
-				MetaConstraint::Constraint(Constraint::Ordered(ordered))
+			CaptureConstraint::Group(c) => MetaConstraint::Group(c),
+			CaptureConstraint::Instantiation(c) => {
+				MetaConstraint::Constraint(Constraint::Instantiation(c))
 			}
-			CaptureConstraint::Precedence(precedence) => {
-				MetaConstraint::Constraint(Constraint::Precedence(precedence))
+			CaptureConstraint::Intension(c) => MetaConstraint::Constraint(Constraint::Intension(c)),
+			CaptureConstraint::Knapsack(c) => MetaConstraint::Constraint(Constraint::Knapsack(c)),
+			CaptureConstraint::Lex(LexAny::Lists(c)) => {
+				MetaConstraint::Constraint(Constraint::Lex(c))
 			}
-			CaptureConstraint::Regular(regular) => {
-				MetaConstraint::Constraint(Constraint::Regular(regular))
+			CaptureConstraint::Lex(LexAny::Matrix(c)) => {
+				MetaConstraint::Constraint(Constraint::LexMatrix(c))
 			}
-			CaptureConstraint::Sum(sum) => MetaConstraint::Constraint(Constraint::Sum(sum)),
-			CaptureConstraint::Group(group) => MetaConstraint::Group(group),
-			CaptureConstraint::Block(block) => MetaConstraint::Block(block),
-			CaptureConstraint::Slide(slide) => MetaConstraint::Slide(slide),
+			CaptureConstraint::Maximum(c) => MetaConstraint::Constraint(Constraint::Maximum(c)),
+			CaptureConstraint::Mdd(c) => MetaConstraint::Constraint(Constraint::Mdd(c)),
+			CaptureConstraint::Minimum(c) => MetaConstraint::Constraint(Constraint::Minimum(c)),
+			CaptureConstraint::NValues(c) => MetaConstraint::Constraint(Constraint::NValues(c)),
+			CaptureConstraint::NoOverlap(c) => MetaConstraint::Constraint(Constraint::NoOverlap(c)),
+			CaptureConstraint::Ordered(c) => MetaConstraint::Constraint(Constraint::Ordered(c)),
+			CaptureConstraint::Precedence(c) => {
+				MetaConstraint::Constraint(Constraint::Precedence(c))
+			}
+			CaptureConstraint::Regular(c) => MetaConstraint::Constraint(Constraint::Regular(c)),
+			CaptureConstraint::Slide(c) => MetaConstraint::Slide(c),
+			CaptureConstraint::Sum(c) => MetaConstraint::Constraint(Constraint::Sum(c)),
 		}
 	}
 }
@@ -2559,14 +3545,35 @@ impl<Identifier: Display, Var: Display> Serialize for MetaConstraint<Identifier,
 		enum OutputConstraint<'a, Identifier, Var> {
 			/// [`AllDifferent`] constraint
 			AllDifferent(&'a AllDifferent<Identifier, Var>),
+			/// [`AllDifferentList`] constraint
+			#[serde(rename = "allDifferent")]
+			AllDifferentList(&'a AllDifferentList<Identifier, Var>),
+			/// [`AllDifferentMatrix`] constraint
+			#[serde(rename = "allDifferent")]
+			AllDifferentMatrix(&'a AllDifferentMatrix<Identifier, Var>),
 			/// [`AllEqual`] constraint
 			AllEqual(&'a AllEqual<Identifier, Var>),
 			/// [`BinPacking`] constraint
 			BinPacking(&'a BinPacking<Identifier, Var>),
+			/// [`BinPackingLimits`] constraint
+			#[serde(rename = "binPacking")]
+			BinPackingLimits(&'a BinPackingLimits<Identifier, Var>),
+			/// [`BinPackingLoads`] constraint
+			#[serde(rename = "binPacking")]
+			BinPackingLoads(&'a BinPackingLoads<Identifier, Var>),
+			/// [`BinPackingConditions`] constraint
+			#[serde(rename = "binPacking")]
+			BinPackingConditions(&'a BinPackingConditions<Identifier, Var>),
 			/// [`Cardinality`] constraint
 			Cardinality(&'a Cardinality<Identifier, Var>),
 			/// [`Channel`] constraint
 			Channel(&'a Channel<Identifier, Var>),
+			/// [`ChannelInverse`] constraint
+			#[serde(rename = "channel")]
+			ChannelInverse(&'a ChannelInverse<Identifier, Var>),
+			/// [`ChannelValue`] constraint
+			#[serde(rename = "channel")]
+			ChannelValue(&'a ChannelValue<Identifier, Var>),
 			/// [`Circuit`] constraint
 			Circuit(&'a Circuit<Identifier, Var>),
 			/// [`Clause`] constraint
@@ -2577,8 +3584,17 @@ impl<Identifier: Display, Var: Display> Serialize for MetaConstraint<Identifier,
 			Cumulative(&'a Cumulative<Identifier, Var>),
 			/// [`Element`] constraint
 			Element(&'a Element<Identifier, Var>),
+			/// [`ElementMember`] constraint
+			#[serde(rename = "element")]
+			ElementMember(&'a ElementMember<Identifier, Var>),
+			/// [`ElementMatrix`] constraint
+			#[serde(rename = "element")]
+			ElementMatrix(&'a ElementMatrix<Identifier, Var>),
 			/// [`Extension`] constraint
 			Extension(&'a Extension<Identifier, Var>),
+			/// [`ExtensionConflicts`] constraint
+			#[serde(rename = "extension")]
+			ExtensionConflicts(&'a ExtensionConflicts<Identifier, Var>),
 			/// [`Instantiation`] constraint
 			Instantiation(&'a Instantiation<Identifier, Var>),
 			/// [`Intension`] constraint
@@ -2587,6 +3603,9 @@ impl<Identifier: Display, Var: Display> Serialize for MetaConstraint<Identifier,
 			Knapsack(&'a Knapsack<Identifier, Var>),
 			/// [`Lex`] constraint
 			Lex(&'a Lex<Identifier, Var>),
+			/// [`LexMatrix`] constraint
+			#[serde(rename = "lex")]
+			LexMatrix(&'a LexMatrix<Identifier, Var>),
 			/// [`Maximum`] constraint
 			Maximum(&'a Maximum<Identifier, Var>),
 			/// [`Mdd`] constraint
@@ -2621,22 +3640,33 @@ impl<Identifier: Display, Var: Display> Serialize for MetaConstraint<Identifier,
 				Constraint::AllDifferent(all_different) => {
 					OutputConstraint::AllDifferent(all_different)
 				}
+				Constraint::AllDifferentList(c) => OutputConstraint::AllDifferentList(c),
+				Constraint::AllDifferentMatrix(c) => OutputConstraint::AllDifferentMatrix(c),
 				Constraint::AllEqual(all_equal) => OutputConstraint::AllEqual(all_equal),
 				Constraint::BinPacking(bin_packing) => OutputConstraint::BinPacking(bin_packing),
+				Constraint::BinPackingLimits(c) => OutputConstraint::BinPackingLimits(c),
+				Constraint::BinPackingLoads(c) => OutputConstraint::BinPackingLoads(c),
+				Constraint::BinPackingConditions(c) => OutputConstraint::BinPackingConditions(c),
 				Constraint::Cardinality(cardinality) => OutputConstraint::Cardinality(cardinality),
 				Constraint::Channel(channel) => OutputConstraint::Channel(channel),
+				Constraint::ChannelInverse(c) => OutputConstraint::ChannelInverse(c),
+				Constraint::ChannelValue(c) => OutputConstraint::ChannelValue(c),
 				Constraint::Circuit(circuit) => OutputConstraint::Circuit(circuit),
 				Constraint::Clause(clause) => OutputConstraint::Clause(clause),
 				Constraint::Count(count) => OutputConstraint::Count(count),
 				Constraint::Cumulative(cumulative) => OutputConstraint::Cumulative(cumulative),
 				Constraint::Element(element) => OutputConstraint::Element(element),
+				Constraint::ElementMember(c) => OutputConstraint::ElementMember(c),
+				Constraint::ElementMatrix(c) => OutputConstraint::ElementMatrix(c),
 				Constraint::Extension(extension) => OutputConstraint::Extension(extension),
+				Constraint::ExtensionConflicts(c) => OutputConstraint::ExtensionConflicts(c),
 				Constraint::Instantiation(instantiation) => {
 					OutputConstraint::Instantiation(instantiation)
 				}
 				Constraint::Intension(intension) => OutputConstraint::Intension(intension),
 				Constraint::Knapsack(knapsack) => OutputConstraint::Knapsack(knapsack),
 				Constraint::Lex(lex) => OutputConstraint::Lex(lex),
+				Constraint::LexMatrix(c) => OutputConstraint::LexMatrix(c),
 				Constraint::Maximum(maximum) => OutputConstraint::Maximum(maximum),
 				Constraint::Mdd(mdd) => OutputConstraint::Mdd(mdd),
 				Constraint::Minimum(minimum) => OutputConstraint::Minimum(minimum),
@@ -2815,32 +3845,51 @@ impl<Identifier: Display, Var: Display> Serialize for Precedence<Identifier, Var
 impl<Identifier> From<Constraint<Identifier>> for TemplateCapture<Identifier> {
 	fn from(value: Constraint<Identifier>) -> Self {
 		match value {
-			Constraint::AllDifferent(all_different) => TemplateCapture::AllDifferent(all_different),
-			Constraint::AllEqual(all_equal) => TemplateCapture::AllEqual(all_equal),
-			Constraint::BinPacking(bin_packing) => TemplateCapture::BinPacking(bin_packing),
-			Constraint::Cardinality(cardinality) => TemplateCapture::Cardinality(cardinality),
-			Constraint::Channel(channel) => TemplateCapture::Channel(channel),
-			Constraint::Circuit(circuit) => TemplateCapture::Circuit(circuit),
-			Constraint::Clause(clause) => TemplateCapture::Clause(clause),
-			Constraint::Count(count) => TemplateCapture::Count(count),
-			Constraint::Cumulative(cumulative) => TemplateCapture::Cumulative(cumulative),
-			Constraint::Element(element) => TemplateCapture::Element(element),
-			Constraint::Extension(extension) => TemplateCapture::Extension(extension),
-			Constraint::Instantiation(instantiation) => {
-				TemplateCapture::Instantiation(instantiation)
+			Constraint::AllDifferent(c) => TemplateCapture::AllDifferent(AllDifferentAny::Plain(c)),
+			Constraint::AllDifferentList(c) => {
+				TemplateCapture::AllDifferent(AllDifferentAny::List(c))
 			}
-			Constraint::Intension(intension) => TemplateCapture::Intension(intension),
-			Constraint::Knapsack(knapsack) => TemplateCapture::Knapsack(knapsack),
-			Constraint::Lex(lex) => TemplateCapture::Lex(lex),
-			Constraint::Maximum(maximum) => TemplateCapture::Maximum(maximum),
-			Constraint::Mdd(mdd) => TemplateCapture::Mdd(mdd),
-			Constraint::Minimum(minimum) => TemplateCapture::Minimum(minimum),
-			Constraint::NValues(nvalues) => TemplateCapture::NValues(nvalues),
-			Constraint::NoOverlap(no_overlap) => TemplateCapture::NoOverlap(no_overlap),
-			Constraint::Ordered(ordered) => TemplateCapture::Ordered(ordered),
-			Constraint::Precedence(precedence) => TemplateCapture::Precedence(precedence),
-			Constraint::Regular(regular) => TemplateCapture::Regular(regular),
-			Constraint::Sum(sum) => TemplateCapture::Sum(sum),
+			Constraint::AllDifferentMatrix(c) => {
+				TemplateCapture::AllDifferent(AllDifferentAny::Matrix(c))
+			}
+			Constraint::AllEqual(c) => TemplateCapture::AllEqual(c),
+			Constraint::BinPacking(c) => TemplateCapture::BinPacking(BinPackingAny::Condition(c)),
+			Constraint::BinPackingConditions(c) => {
+				TemplateCapture::BinPacking(BinPackingAny::Conditions(c))
+			}
+			Constraint::BinPackingLimits(c) => {
+				TemplateCapture::BinPacking(BinPackingAny::Limits(c))
+			}
+			Constraint::BinPackingLoads(c) => TemplateCapture::BinPacking(BinPackingAny::Loads(c)),
+			Constraint::Cardinality(c) => TemplateCapture::Cardinality(c),
+			Constraint::Channel(c) => TemplateCapture::Channel(ChannelAny::Single(c)),
+			Constraint::ChannelInverse(c) => TemplateCapture::Channel(ChannelAny::Inverse(c)),
+			Constraint::ChannelValue(c) => TemplateCapture::Channel(ChannelAny::Value(c)),
+			Constraint::Circuit(c) => TemplateCapture::Circuit(c),
+			Constraint::Clause(c) => TemplateCapture::Clause(c),
+			Constraint::Count(c) => TemplateCapture::Count(c),
+			Constraint::Cumulative(c) => TemplateCapture::Cumulative(c),
+			Constraint::Element(c) => TemplateCapture::Element(ElementAny::Indexed(c)),
+			Constraint::ElementMatrix(c) => TemplateCapture::Element(ElementAny::Matrix(c)),
+			Constraint::ElementMember(c) => TemplateCapture::Element(ElementAny::Member(c)),
+			Constraint::Extension(c) => TemplateCapture::Extension(ExtensionAny::Supports(c)),
+			Constraint::ExtensionConflicts(c) => {
+				TemplateCapture::Extension(ExtensionAny::Conflicts(c))
+			}
+			Constraint::Instantiation(c) => TemplateCapture::Instantiation(c),
+			Constraint::Intension(c) => TemplateCapture::Intension(c),
+			Constraint::Knapsack(c) => TemplateCapture::Knapsack(c),
+			Constraint::Lex(c) => TemplateCapture::Lex(LexAny::Lists(c)),
+			Constraint::LexMatrix(c) => TemplateCapture::Lex(LexAny::Matrix(c)),
+			Constraint::Maximum(c) => TemplateCapture::Maximum(c),
+			Constraint::Mdd(c) => TemplateCapture::Mdd(c),
+			Constraint::Minimum(c) => TemplateCapture::Minimum(c),
+			Constraint::NValues(c) => TemplateCapture::NValues(c),
+			Constraint::NoOverlap(c) => TemplateCapture::NoOverlap(c),
+			Constraint::Ordered(c) => TemplateCapture::Ordered(c),
+			Constraint::Precedence(c) => TemplateCapture::Precedence(c),
+			Constraint::Regular(c) => TemplateCapture::Regular(c),
+			Constraint::Sum(c) => TemplateCapture::Sum(c),
 		}
 	}
 }

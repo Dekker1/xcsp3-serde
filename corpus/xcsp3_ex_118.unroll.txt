@@ -1,13 +1,9 @@
 [
-    Element(
-        Element {
+    ElementMatrix(
+        ElementMatrix {
             info: MetaInfo {
                 identifier: None,
                 note: None,
-            },
-            list: OffsetList {
-                list: [],
-                start_index: 0,
             },
             matrix: [
                 [
@@ -98,24 +94,24 @@
                     ),
                 ],
             ],
-            index: [
-                Var(
-                    Ident(
-                        "i",
-                    ),
-                ),
-                Var(
-                    Ident(
-                        "j",
-                    ),
-                ),
-            ],
-            value: Some(
-                Const(
-                    5,
+            row: Var(
+                Ident(
+                    "i",
                 ),
             ),
-            condition: None,
+            col: Var(
+                Ident(
+                    "j",
+                ),
+            ),
+            condition: Condition {
+                operator: Eq,
+                operand: Int(
+                    Const(
+                        5,
+                    ),
+                ),
+            },
         },
     ),
 ]

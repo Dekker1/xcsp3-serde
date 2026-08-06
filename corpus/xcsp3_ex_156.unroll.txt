@@ -1,11 +1,10 @@
 [
-    AllDifferent(
-        AllDifferent {
+    AllDifferentMatrix(
+        AllDifferentMatrix {
             info: MetaInfo {
                 identifier: None,
                 note: None,
             },
-            list: [],
             matrix: [
                 [
                     Var(

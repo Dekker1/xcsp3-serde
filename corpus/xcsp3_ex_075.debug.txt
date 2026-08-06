@@ -56,18 +56,14 @@ Instance {
                             32,
                         ),
                     ],
-                    condition: Some(
-                        Condition {
-                            operator: Le,
-                            operand: Int(
-                                Const(
-                                    100,
-                                ),
+                    condition: Condition {
+                        operator: Le,
+                        operand: Int(
+                            Const(
+                                100,
                             ),
-                        },
-                    ),
-                    limits: [],
-                    loads: [],
+                        ),
+                    },
                 },
             ),
         ),

@@ -79,7 +79,6 @@ Instance {
                             None,
                         ],
                     ],
-                    conflicts: [],
                 },
             ),
         ),
