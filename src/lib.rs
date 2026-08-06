@@ -523,6 +523,42 @@ fn deserialize_int_vals<'de, D: Deserializer<'de>>(
 	deserializer.deserialize_str(V)
 }
 
+/// Deserialize a string as a list of integer expressions, where a value can be
+/// followed by `x<count>` to indicate that it occurs `count` times in a row
+fn deserialize_int_exps<'de, D: Deserializer<'de>, Var: IntoVar>(
+	deserializer: D,
+) -> Result<Vec<IntExp<Var>>, D::Error> {
+	/// Visitor to parse a list of integer expressions
+	struct V<X>(PhantomData<X>);
+	impl<X: IntoVar> Visitor<'_> for V<X> {
+		type Value = Vec<IntExp<X>>;
+
+		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+			formatter.write_str("a list of integer expressions")
+		}
+
+		fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+			let v = v.trim();
+			// Only a constant can be repeated, so the `x<count>` form is parsed
+			// here rather than through `repeated`, which would require the
+			// expression to be cloneable.
+			let (_, vals) = all_consuming(whitespace_seperated(alt((
+				map(
+					pair(int, preceded(char('x'), idx_int)),
+					|(val, count): (IntVal, usize)| {
+						(0..count).map(|_| IntExp::Const(val)).collect()
+					},
+				),
+				map(IntExp::parse, |e| vec![e]),
+			))))
+			.parse(v)
+			.map_err(|_| E::custom(format!("invalid integer expressions `{v}'")))?;
+			Ok(vals.into_iter().flatten().collect())
+		}
+	}
+	deserializer.deserialize_str(V::<Var>(PhantomData))
+}
+
 /// Deserialize a string as a list of integers, where `*` denotes that any value
 /// is allowed
 fn deserialize_opt_int_vals<'de, D: Deserializer<'de>>(
@@ -1733,5 +1769,41 @@ mod tests {
 			})
 			.collect();
 		assert_eq!(bound, [("x", vec![0]), ("x", vec![1]), ("x", vec![2])]);
+	}
+
+	/// The coefficients of a `sum` may be variables, and a group template may
+	/// bind them through a placeholder.
+	#[test]
+	fn sum_coeffs_bind_variables() {
+		let xml = r#"<instance format="XCSP3" type="CSP">
+			<variables>
+				<array id="x" size="[2]">0..2</array>
+				<array id="c" size="[2]">1..2</array>
+			</variables>
+			<constraints>
+				<group>
+					<sum>
+						<list> x[] </list>
+						<coeffs> %... </coeffs>
+						<condition> (le,4) </condition>
+					</sum>
+					<args> c[] </args>
+				</group>
+			</constraints>
+		</instance>"#;
+		let inst: Instance = quick_xml::de::from_str(xml).unwrap();
+		let constraints = inst.unroll_constraints().unwrap();
+		let [Constraint::Sum(c)] = constraints.as_slice() else {
+			panic!("expected a single sum constraint")
+		};
+		let coeffs: Vec<_> = c
+			.coeffs
+			.iter()
+			.map(|e| match e {
+				IntExp::Var(SimpleRef::ArrayAccess(id, idx)) => (id.as_str(), idx.clone()),
+				_ => panic!("expected a variable coefficient, found {e:?}"),
+			})
+			.collect();
+		assert_eq!(coeffs, [("c", vec![0]), ("c", vec![1])]);
 	}
 }

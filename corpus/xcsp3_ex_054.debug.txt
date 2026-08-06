@@ -21,12 +21,24 @@ Instance {
                         ),
                     ],
                     coeffs: [
-                        1,
-                        1,
-                        1,
-                        1,
-                        2,
-                        2,
+                        Const(
+                            1,
+                        ),
+                        Const(
+                            1,
+                        ),
+                        Const(
+                            1,
+                        ),
+                        Const(
+                            1,
+                        ),
+                        Const(
+                            2,
+                        ),
+                        Const(
+                            2,
+                        ),
                     ],
                     condition: Condition {
                         operator: Le,

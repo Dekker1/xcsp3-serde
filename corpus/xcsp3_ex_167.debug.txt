@@ -74,12 +74,24 @@ Instance {
                         ),
                     ],
                     coeffs: [
-                        1,
-                        2,
-                        5,
-                        10,
-                        20,
-                        50,
+                        Const(
+                            1,
+                        ),
+                        Const(
+                            2,
+                        ),
+                        Const(
+                            5,
+                        ),
+                        Const(
+                            10,
+                        ),
+                        Const(
+                            20,
+                        ),
+                        Const(
+                            50,
+                        ),
                     ],
                     condition: Condition {
                         operator: Eq,

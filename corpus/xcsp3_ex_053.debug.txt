@@ -35,10 +35,18 @@ Instance {
                         ),
                     ],
                     coeffs: [
-                        4,
-                        2,
-                        3,
-                        1,
+                        Const(
+                            4,
+                        ),
+                        Const(
+                            2,
+                        ),
+                        Const(
+                            3,
+                        ),
+                        Const(
+                            1,
+                        ),
                     ],
                     condition: Condition {
                         operator: In,

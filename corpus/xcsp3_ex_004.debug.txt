@@ -40,8 +40,12 @@ Instance {
                         ),
                     ],
                     coeffs: [
-                        250,
-                        200,
+                        Const(
+                            250,
+                        ),
+                        Const(
+                            200,
+                        ),
                     ],
                     condition: Condition {
                         operator: Le,
@@ -71,7 +75,9 @@ Instance {
                         ),
                     ],
                     coeffs: [
-                        2,
+                        Const(
+                            2,
+                        ),
                     ],
                     condition: Condition {
                         operator: Le,
@@ -106,8 +112,12 @@ Instance {
                         ),
                     ],
                     coeffs: [
-                        75,
-                        150,
+                        Const(
+                            75,
+                        ),
+                        Const(
+                            150,
+                        ),
                     ],
                     condition: Condition {
                         operator: Le,
@@ -142,8 +152,12 @@ Instance {
                         ),
                     ],
                     coeffs: [
-                        100,
-                        150,
+                        Const(
+                            100,
+                        ),
+                        Const(
+                            150,
+                        ),
                     ],
                     condition: Condition {
                         operator: Le,
@@ -173,7 +187,9 @@ Instance {
                         ),
                     ],
                     coeffs: [
-                        75,
+                        Const(
+                            75,
+                        ),
                     ],
                     condition: Condition {
                         operator: Le,

@@ -21,7 +21,7 @@ use serde::{
 };
 
 use crate::{
-	as_str, deserialize_int_vals,
+	as_str, deserialize_int_exps, deserialize_int_vals,
 	error::UnrollError,
 	expression::{
 		identifier, int, range, sequence, tuple, whitespace_seperated, BoolExp, Exp, ExpList,
@@ -1033,13 +1033,17 @@ pub struct Sum<Identifier = String, Var = VarRef<Identifier>> {
 	)]
 	pub list: Vec<IntExp<Var>>,
 	/// Coefficient for each expression
+	///
+	/// Coefficients are not restricted to constants: XCSP3 allows a coefficient
+	/// to be a variable, and a group template can bind them through a
+	/// placeholder.
 	#[serde(
 		default,
 		skip_serializing_if = "Vec::is_empty",
-		deserialize_with = "deserialize_int_vals",
+		deserialize_with = "deserialize_int_exps",
 		serialize_with = "serialize_list"
 	)]
-	pub coeffs: Vec<IntVal>,
+	pub coeffs: Vec<IntExp<Var>>,
 	/// Condition to be enforced
 	pub condition: Condition<Var>,
 }
@@ -1681,13 +1685,21 @@ impl<Identifier, I> Constraint<Identifier, VarRef<I>> {
 			| Constraint::Minimum(Minimum {
 				list, condition, ..
 			})
-			| Constraint::Sum(Sum {
-				list, condition, ..
-			})
 			| Constraint::NValues(NValues {
 				list, condition, ..
 			}) => list
 				.iter()
+				.filter_map(|e| e.max_placeholder())
+				.chain(condition.operand.max_placeholder())
+				.max(),
+			Constraint::Sum(Sum {
+				list,
+				coeffs,
+				condition,
+				..
+			}) => list
+				.iter()
+				.chain(coeffs)
 				.filter_map(|e| e.max_placeholder())
 				.chain(condition.operand.max_placeholder())
 				.max(),
@@ -2085,7 +2097,7 @@ impl<Identifier: Clone + Hash + Eq + ToString> Constraint<Identifier, VarRef<Ide
 			}) => Ok(Constraint::Sum(Sum {
 				info: info.clone(),
 				list: instantiate_ints(list)?,
-				coeffs: coeffs.clone(),
+				coeffs: instantiate_ints(coeffs)?,
 				condition: condition.unroll(arrays, args, remainder)?,
 			})),
 		}
