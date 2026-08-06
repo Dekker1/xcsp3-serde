@@ -1311,6 +1311,16 @@ impl<Var: IntoVar> SetExp<Var> {
 				),
 				SetExp::Set,
 			),
+			// A set can also be written using braces, as in `{1,5}`. Both forms
+			// denote the same set, so both parse to [`SetExp::Set`].
+			map(
+				delimited(
+					char('{'),
+					separated_list0(char(','), IntExp::parse),
+					char('}'),
+				),
+				SetExp::Set,
+			),
 			map(VarRef::parse, |v| SetExp::Var(Var::into_var(v))),
 		))
 		.parse(input)

@@ -1842,6 +1842,36 @@ mod tests {
 		assert!(c.lists.iter().all(|l| l.len() == 3));
 	}
 
+	/// A set operand of a condition can be written either as `set(1,5)` or as
+	/// `{1,5}`, and is serialized using braces, so both have to parse.
+	#[test]
+	fn condition_operand_set_literal() {
+		let instance = |operand: &str| {
+			format!(
+				r#"<instance format="XCSP3" type="CSP">
+					<variables><array id="x" size="[2]">0..3</array></variables>
+					<constraints>
+						<sum><list> x[] </list><condition> (in,{operand}) </condition></sum>
+					</constraints>
+				</instance>"#
+			)
+		};
+		let braces: Instance = quick_xml::de::from_str(&instance("{1,5}")).unwrap();
+		let call: Instance = quick_xml::de::from_str(&instance("set(1,5)")).unwrap();
+		assert_eq!(braces, call, "both spellings denote the same set");
+
+		// The serialized form uses braces, so it has to parse back.
+		let out = quick_xml::se::to_string(&braces).unwrap();
+		assert!(out.contains("{1,5}"), "{out}");
+		assert_eq!(braces, quick_xml::de::from_str(&out).unwrap());
+
+		let empty: Instance = quick_xml::de::from_str(&instance("{}")).unwrap();
+		assert_eq!(
+			empty,
+			quick_xml::de::from_str(&quick_xml::se::to_string(&empty).unwrap()).unwrap()
+		);
+	}
+
 	/// A [`Constraint`] can be deserialized on its own, not only as part of an
 	/// instance.
 	#[test]
