@@ -76,7 +76,10 @@ use nom::{
 	IResult, Parser,
 };
 pub use rangelist::RangeList;
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{
+	de::{IntoDeserializer, Visitor},
+	Deserialize, Deserializer, Serialize, Serializer,
+};
 
 use crate::{
 	constraint::{Constraint, MetaConstraint},
@@ -415,29 +418,77 @@ pub enum SimpleRef<Identifier> {
 }
 
 /// Definition of a variable
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
-#[serde(bound(
-	deserialize = "Identifier: From<String>",
-	serialize = "Identifier: Display"
-))]
+#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
+#[serde(bound(serialize = "Identifier: Display"))]
 pub struct Variable<Identifier = String> {
 	/// Name of the variable
-	#[serde(
-		rename = "@id",
-		deserialize_with = "from_string",
-		serialize_with = "as_str"
-	)]
+	#[serde(rename = "@id", serialize_with = "as_str")]
 	pub identifier: Identifier,
 	/// Comment by the user about the variable
 	#[serde(rename = "@note", default, skip_serializing_if = "Option::is_none")]
 	pub note: Option<String>,
 	/// List of possible values the variable can take
-	#[serde(
-		rename = "$text",
-		deserialize_with = "deserialize_range_list",
-		serialize_with = "serialize_range_list"
-	)]
+	#[serde(rename = "$text", serialize_with = "serialize_range_list")]
 	pub domain: RangeList<IntVal>,
+}
+
+/// Reject the variable declarations that this crate does not support
+///
+/// Only integer variables are represented. Checking the attributes that select
+/// anything else before the domain is parsed keeps an unsupported feature from
+/// being reported as a malformed integer domain.
+fn check_variable_support<E: serde::de::Error>(
+	ty: Option<&str>,
+	alias: Option<&str>,
+) -> Result<(), E> {
+	if let Some(ty) = ty {
+		if ty != "integer" {
+			return Err(E::custom(format!(
+				"`{ty}' variables are not supported, only integer variables are"
+			)));
+		}
+	}
+	if alias.is_some() {
+		return Err(E::custom(
+			"the `as' attribute, which takes the domain of another variable, is not supported",
+		));
+	}
+	Ok(())
+}
+
+impl<'de, Identifier: From<String>> Deserialize<'de> for Variable<Identifier> {
+	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		/// Deserialize a <var> element
+		#[derive(Deserialize)]
+		#[serde(bound(deserialize = "I: From<String>"))]
+		struct Variable<I> {
+			/// id attribute
+			#[serde(rename = "@id", deserialize_with = "from_string")]
+			identifier: I,
+			/// optional note attribute
+			#[serde(rename = "@note", default)]
+			note: Option<String>,
+			/// optional type attribute
+			#[serde(rename = "@type", default)]
+			ty: Option<String>,
+			/// optional as attribute
+			#[serde(rename = "@as", default)]
+			alias: Option<String>,
+			/// content of the element, left unparsed until the type is known
+			#[serde(rename = "$text", default)]
+			domain: Option<String>,
+		}
+		let v = Variable::deserialize(deserializer)?;
+		check_variable_support(v.ty.as_deref(), v.alias.as_deref())?;
+		let Some(domain) = v.domain else {
+			return Err(serde::de::Error::missing_field("$text"));
+		};
+		Ok(Self {
+			identifier: v.identifier,
+			note: v.note,
+			domain: deserialize_range_list(domain.into_deserializer())?,
+		})
+	}
 }
 
 /// Reference to a variable, array element, array slice, or placeholder in a
@@ -816,11 +867,18 @@ impl<'de, Identifier: From<String>, Var: IntoVar> Deserialize<'de> for Array<Ide
 			/// size attribute
 			#[serde(rename = "@size", deserialize_with = "deserialize_size")]
 			size: Vec<usize>,
+			/// optional type attribute
+			#[serde(rename = "@type", default)]
+			ty: Option<String>,
+			/// optional as attribute
+			#[serde(rename = "@as", default)]
+			alias: Option<String>,
 			/// content of the element
 			#[serde(rename = "$value")]
 			domain: Domain<'a, Var>,
 		}
 		let x = Array::deserialize(deserializer)?;
+		check_variable_support(x.ty.as_deref(), x.alias.as_deref())?;
 		let domains = match x.domain {
 			Domain::Domain(v) => v.into_iter().map(|d| (d.vars, d.domain)).collect(),
 			Domain::Direct(s) => {
@@ -1870,6 +1928,45 @@ mod tests {
 			empty,
 			quick_xml::de::from_str(&quick_xml::se::to_string(&empty).unwrap()).unwrap()
 		);
+	}
+
+	/// A variable that is not an integer variable is reported as unsupported,
+	/// rather than as a malformed integer domain.
+	#[test]
+	fn unsupported_variable_kinds_are_named() {
+		let instance = |decl: &str| {
+			format!(
+				r#"<instance format="XCSP3" type="CSP">
+					<variables>{decl}<var id="z"> 0..1 </var></variables>
+					<constraints><allDifferent> z z </allDifferent></constraints>
+				</instance>"#
+			)
+		};
+		let err = |decl: &str| {
+			quick_xml::de::from_str::<Instance>(&instance(decl))
+				.expect_err("expected the declaration to be rejected")
+				.to_string()
+		};
+
+		for decl in [
+			r#"<var id="a" type="symbolic"> red green blue </var>"#,
+			r#"<array id="a" size="[2]" type="symbolic"> red green </array>"#,
+		] {
+			assert!(
+				err(decl).contains("`symbolic' variables are not supported"),
+				"{decl}"
+			);
+		}
+		assert!(err(r#"<var id="b" as="z"/>"#).contains("`as' attribute"));
+
+		// Integer variables are unaffected, whether or not the type is spelled out.
+		for decl in [
+			r#"<var id="a" type="integer"> 0..3 </var>"#,
+			r#"<var id="a"> 0..3 </var>"#,
+			r#"<array id="a" size="[2]"> 0..3 </array>"#,
+		] {
+			let _: Instance = quick_xml::de::from_str(&instance(decl)).unwrap();
+		}
 	}
 
 	/// A [`Constraint`] can be deserialized on its own, not only as part of an
